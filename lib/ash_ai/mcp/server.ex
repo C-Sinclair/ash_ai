@@ -200,7 +200,9 @@ defmodule AshAi.Mcp.Server do
             "capabilities" => %{
               "tools" => %{
                 "listChanged" => false
-              }
+              },
+              # TODO: consider if this should only show IF there are any resources exposed
+              "resources" => %{}
             }
           }
         }
@@ -220,6 +222,75 @@ defmodule AshAi.Mcp.Server do
       %{"method" => "$/cancelRequest", "params" => %{"id" => _request_id}} ->
         # TODO: Cancel request?
         {:no_response, nil, session_id}
+
+      # TODO: this can support paginaton via params later
+      %{"method" => "resources/list", "id" => id} ->
+        resources =
+          opts
+          |> mcp_resources()
+          |> Enum.map(fn resource ->
+            %{
+              "name" => resource.name,
+              "description" => resource.description,
+              "uri" => resource.uri,
+              "title" => resource.title,
+              "mimeType" => resource.mime_type
+            }
+          end)
+
+        response = %{
+          "jsonrpc" => "2.0",
+          "id" => id,
+          "result" => %{
+            "resources" => resources
+          }
+        }
+
+        {:json_response, Jason.encode!(response), session_id}
+
+      %{"method" => "resources/read", "id" => id, "params" => %{"uri" => uri}} ->
+        opts =
+          opts
+          |> Keyword.update(
+            :context,
+            %{mcp_session_id: session_id},
+            &Map.put(&1, :mcp_session_id, session_id)
+          )
+
+        opts
+        |> mcp_resources()
+        |> Enum.find(&(&1.uri == uri))
+        |> case do
+          nil ->
+            response = %{
+              "jsonrpc" => "2.0",
+              "id" => id,
+              "error" => %{
+                "code" => -32_002,
+                "message" => "Resource not found",
+                "data" => %{"uri" => uri}
+              }
+            }
+
+            {:json_response, Jason.encode!(response), session_id}
+
+          mcp_resource ->
+            response = %{
+              "jsonrpc" => "2.0",
+              "id" => id,
+              "result" => %{
+                "content" => [
+                  %{
+                    "uri" => mcp_resource.uri,
+                    "mimeType" => mcp_resource.mime_type,
+                    "text" => mcp_resource.text
+                  }
+                ]
+              }
+            }
+
+            {:json_response, Jason.encode!(response), session_id}
+        end
 
       %{"method" => "tools/list", "id" => id} ->
         tools =
@@ -334,6 +405,17 @@ defmodule AshAi.Mcp.Server do
          json_rpc_error_response(nil, -32_600, "Invalid Request Got: #{inspect(other)}"),
          session_id}
     end
+  end
+
+  defp mcp_resources(opts) do
+    opts
+    |> Keyword.take([:otp_app, :tools, :actor, :context, :tenant, :actions])
+    |> Keyword.update(
+      :context,
+      %{otp_app: opts[:otp_app]},
+      &Map.put(&1, :otp_app, opts[:otp_app])
+    )
+    |> AshAi.mcp_resources()
   end
 
   defp tools(opts) do
