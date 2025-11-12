@@ -182,8 +182,70 @@ defmodule AshAi do
     ]
   }
 
+  defmodule McpResource do
+    @moduledoc "An MCP resource to expose via the Model Context Protocol (MCP)."
+    @type t :: %__MODULE__{
+            name: atom(),
+            title: String.t(),
+            description: String.t(),
+            uri: String.t(),
+            mime_type: String.t()
+          }
+
+    defstruct [
+      :name,
+      :title,
+      :description,
+      :uri,
+      :mime_type,
+      __spark_metadata__: nil
+    ]
+  end
+
+  @mcp_resource %Spark.Dsl.Entity{
+    name: :mcp_resource,
+    target: McpResource,
+    describe: """
+    An MCP resource to expose via the Model Context Protocol (MCP).
+    MCP Resources are different to Ash Resources. Here thery are used to
+    respond to LLM models with static or dynamic assets like files, images, or JSON.
+    """,
+    schema: [
+      name: [type: :atom, required: true],
+      title: [
+        type: :string,
+        required: true,
+        doc: "A short, human-readable title for the resource."
+      ],
+      description: [
+        type: :string,
+        required: true,
+        doc:
+          "A description of the resource. This is important for LLM to determine what the resource is and when to call it."
+      ],
+      uri: [
+        type: :string,
+        required: true,
+        doc: "The URI where the resource can be accessed."
+      ],
+      mime_type: [
+        type: :string,
+        default: "plain/text",
+        doc: "The MIME type of the resource, e.g. 'application/json', 'image/png', etc."
+      ]
+    ],
+    args: [:name, :description, :mime_type, :title, :uri]
+  }
+
+  @mcp_resources %Spark.Dsl.Section{
+    name: :mcp_resources,
+    entities: [
+      @mcp_resource
+    ]
+  }
+
   use Spark.Dsl.Extension,
-    sections: [@tools, @vectorize],
+    sections: [@tools, @vectorize, @mcp_resources],
     imports: [AshAi.Actions],
     transformers: [AshAi.Transformers.Vectorize]
 
@@ -203,6 +265,12 @@ defmodule AshAi do
           type: {:wrap_list, :atom},
           doc: """
            A list of tool names. If not set. Defaults to everything. If `actions` is also set, both are applied as filters.
+          """
+        ],
+        mcp_resources: [
+          type: {:wrap_list, :string},
+          doc: """
+          A list of MCP resource names to expose. If not set, defaults to everything.
           """
         ],
         exclude_actions: [
@@ -1150,6 +1218,47 @@ defmodule AshAi do
   end
 
   @doc false
+
+  def exposed_mcp_resources(opts) when is_list(opts) do
+    exposed_mcp_resources(Options.validate!(opts))
+  end
+
+  def exposed_mcp_resources(opts) do
+    if opts.mcp_resources do
+      Enum.map(opts.mcp_resources, fn resource_name ->
+        domain =
+          AshAi.Info.domains()
+          |> Enum.find(fn domain ->
+            Enum.any?(AshAi.Info.mcp_resources(domain), fn res ->
+              res.name == resource_name
+            end)
+          end)
+
+        if !domain do
+          raise "Cannot find MCP resource #{resource_name} in any Ash domain"
+        end
+
+        mcp_resource =
+          AshAi.Info.mcp_resources(domain)
+          |> Enum.find(fn res -> res.name == resource_name end)
+
+        %{mcp_resource | domain: domain}
+      end)
+    else
+      if !opts.otp_app do
+        raise "Must specify `otp_app` if you do not specify `actions`"
+      end
+
+      for domain <- Application.get_env(opts.otp_app, :ash_domains) || [],
+          mcp_resource <- AshAi.Info.mcp_resources(domain) do
+        %{
+          mcp_resource
+          | domain: domain,
+            action: Ash.Resource.Info.action(mcp_resource.resource, mcp_resource.action)
+        }
+      end
+    end
+  end
 
   def exposed_tools(opts) when is_list(opts) do
     exposed_tools(Options.validate!(opts))
