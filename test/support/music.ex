@@ -10,6 +10,12 @@ defmodule AshAi.Test.Music do
     tool :list_artists, AshAi.Test.Music.ArtistAfterAction, :read
   end
 
+  mcp_resources do
+    mcp_resource(:artist_card, "file://ui/artist_card.html", ArtistUi, :artist_card,
+      mime_type: "text/html"
+    )
+  end
+
   resources do
     resource AshAi.Test.Music.ArtistAfterAction do
       define :create_artist_after_action, action: :create
@@ -26,5 +32,7 @@ defmodule AshAi.Test.Music do
       define :create_artist_oban, action: :create
       define :update_artist_oban, action: :update
     end
+
+    resource AshAi.Test.Music.ArtistUi
   end
 end

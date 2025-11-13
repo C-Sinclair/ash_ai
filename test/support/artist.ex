@@ -175,3 +175,26 @@ defmodule AshAi.Test.Music.ArtistOban do
     defaults [:create, :read, :update, :destroy]
   end
 end
+
+defmodule AshAi.Test.Music.ArtistUi do
+  @moduledoc false
+  use Ash.Resource,
+    domain: AshAi.Test.Music,
+    extensions: [AshAi]
+
+  attributes do
+    uuid_v7_primary_key :id, writable?: true
+    attribute :name, :string, public?: true
+    attribute :bio, :string, public?: true
+  end
+
+  actions do
+    action :artist_card, :string do
+      description "Get an artist card UI representation."
+
+      run fn _, _ ->
+        {:ok, "<div>Artist Card</div>"}
+      end
+    end
+  end
+end
