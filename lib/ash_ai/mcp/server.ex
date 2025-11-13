@@ -415,7 +415,7 @@ defmodule AshAi.Mcp.Server do
       %{otp_app: opts[:otp_app]},
       &Map.put(&1, :otp_app, opts[:otp_app])
     )
-    |> AshAi.mcp_resources()
+    |> AshAi.exposed_mcp_resources()
   end
 
   defp tools(opts) do
