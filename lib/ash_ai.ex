@@ -139,59 +139,20 @@ defmodule AshAi do
     ]
   }
 
-  defmodule McpResource do
-    @moduledoc "An MCP resource to expose via the Model Context Protocol (MCP)."
-    @type t :: %__MODULE__{
-            name: atom(),
-            title: String.t(),
-            description: String.t(),
-            uri: String.t(),
-            mime_type: String.t()
-          }
-
-    defstruct [
-      :name,
-      :title,
-      :description,
-      :uri,
-      :mime_type,
-      __spark_metadata__: nil
-    ]
-  end
-
   @mcp_resource %Spark.Dsl.Entity{
     name: :mcp_resource,
-    target: McpResource,
     describe: """
     An MCP resource to expose via the Model Context Protocol (MCP).
     MCP Resources are different to Ash Resources. Here thery are used to
     respond to LLM models with static or dynamic assets like files, images, or JSON.
     """,
-    schema: [
-      name: [type: :atom, required: true],
-      title: [
-        type: :string,
-        required: true,
-        doc: "A short, human-readable title for the resource."
-      ],
-      description: [
-        type: :string,
-        required: true,
-        doc:
-          "A description of the resource. This is important for LLM to determine what the resource is and when to call it."
-      ],
-      uri: [
-        type: :string,
-        required: true,
-        doc: "The URI where the resource can be accessed."
-      ],
-      mime_type: [
-        type: :string,
-        default: "plain/text",
-        doc: "The MIME type of the resource, e.g. 'application/json', 'image/png', etc."
-      ]
+    examples: [
+      ~s(mcp_resource :artist_card, "file://info/artist_info.txt", Artist, :artist_info),
+      ~s(mcp_resource :artist_card, "file://ui/artist_card.html", Artist, :artist_card, mime_type: "text/html")
     ],
-    args: [:name, :description, :mime_type, :title, :uri]
+    target: AshAi.Mcp.McpResource,
+    schema: AshAi.Mcp.McpResource.schema(),
+    args: [:name, :uri, :resource, :action]
   }
 
   @mcp_resources %Spark.Dsl.Section{
@@ -476,7 +437,7 @@ defmodule AshAi do
     |> Jason.decode!()
   end
 
-  defp function(%Tool{
+  defp function(%AshAi.Tools.Tool{
          name: name,
          domain: domain,
          resource: resource,
