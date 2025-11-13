@@ -3,7 +3,8 @@ defmodule AshAi.Mcp.McpResource do
   @type t :: %__MODULE__{
           name: atom(),
           resource: Ash.Resource.t(),
-          action: atom(),
+          action: atom() | Ash.Resource.Actions.Action.t(),
+          domain: module() | nil,
           title: String.t(),
           description: String.t(),
           uri: String.t(),
@@ -14,6 +15,7 @@ defmodule AshAi.Mcp.McpResource do
     :name,
     :resource,
     :action,
+    :domain,
     :title,
     :description,
     :uri,

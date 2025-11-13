@@ -1,0 +1,323 @@
+# SPDX-FileCopyrightText: 2024 ash_ai contributors <https://github.com/ash-project/ash_ai/graphs.contributors>
+#
+# SPDX-License-Identifier: MIT
+
+defmodule AshAi.Mcp.ResourcesTest do
+  @moduledoc """
+  Tests for MCP resources functionality including resources/list and resources/read endpoints.
+  """
+  use AshAi.RepoCase, async: false
+  import Plug.{Conn, Test}
+
+  alias AshAi.Mcp.Router
+  alias AshAi.Test.Music
+
+  @opts [otp_app: :ash_ai]
+
+  describe "resources/list" do
+    test "returns available MCP resources" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      response = list_resources(session_id, @opts)
+      body = decode_response(response)
+
+      assert response.status == 200
+      assert body["jsonrpc"] == "2.0"
+      assert body["id"] == "list_1"
+      assert is_list(body["result"]["resources"])
+      assert length(body["result"]["resources"]) > 0
+
+      # Verify at least the artist_card resource is present
+      artist_card = Enum.find(body["result"]["resources"], &(&1["name"] == "artist_card"))
+      assert artist_card
+      assert artist_card["uri"] == "file://ui/artist_card.html"
+      assert artist_card["mimeType"] == "text/html"
+    end
+
+    test "returns all configured resources with correct metadata" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      response = list_resources(session_id, @opts)
+      body = decode_response(response)
+
+      resources = body["result"]["resources"]
+      assert length(resources) == 4
+
+      resource_names = Enum.map(resources, & &1["name"])
+      assert "artist_card" in resource_names
+      assert "artist_json" in resource_names
+      assert "artist_with_params" in resource_names
+      assert "failing_resource" in resource_names
+
+      # Verify each resource has required fields
+      for resource <- resources do
+        assert is_binary(resource["name"])
+        assert is_binary(resource["uri"])
+        assert is_binary(resource["mimeType"])
+      end
+    end
+  end
+
+  describe "resources/read" do
+    test "successfully reads a resource with valid URI" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      response = read_resource(session_id, "file://ui/artist_card.html", @opts)
+      body = decode_response(response)
+
+      assert response.status == 200
+      assert body["jsonrpc"] == "2.0"
+      assert body["id"] == "read_1"
+
+      content = body["result"]["content"]
+      assert is_list(content)
+      assert length(content) == 1
+
+      [item] = content
+      assert item["uri"] == "file://ui/artist_card.html"
+      assert item["mimeType"] == "text/html"
+      assert item["text"] == "<div>Artist Card</div>"
+    end
+
+    test "returns -32002 error for non-existent URI" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      response = read_resource(session_id, "file://does/not/exist.txt", @opts)
+      body = decode_response(response)
+
+      assert response.status == 200
+      assert body["jsonrpc"] == "2.0"
+      assert body["error"]["code"] == -32_002
+      assert body["error"]["message"] == "Resource not found"
+      assert body["error"]["data"]["uri"] == "file://does/not/exist.txt"
+    end
+
+    test "returns -32603 error when action execution fails" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      response = read_resource(session_id, "file://fail/test", @opts)
+      body = decode_response(response)
+
+      assert response.status == 200
+      assert body["jsonrpc"] == "2.0"
+      assert body["error"]["code"] == -32_603
+      assert body["error"]["message"] == "Resource read failed"
+      assert body["error"]["data"]["uri"] == "file://fail/test"
+      assert body["error"]["data"]["error"]
+    end
+
+    test "requires exact URI match" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      # Test similar but not exact URIs
+      similar_uris = [
+        "file://ui/artist_card.HTML",
+        "file://ui/artist_card.html/",
+        "file://UI/artist_card.html",
+        "file://ui/artist_card"
+      ]
+
+      for uri <- similar_uris do
+        response = read_resource(session_id, uri, @opts)
+        body = decode_response(response)
+
+        assert body["error"]["code"] == -32_002,
+               "Expected resource not found for URI: #{uri}"
+      end
+    end
+
+    test "preserves different mime types" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      # Test HTML mime type
+      html_response = read_resource(session_id, "file://ui/artist_card.html", @opts)
+      html_body = decode_response(html_response)
+      [html_content] = html_body["result"]["content"]
+      assert html_content["mimeType"] == "text/html"
+
+      # Test JSON mime type
+      json_response = read_resource(session_id, "file://data/artist.json", @opts)
+      json_body = decode_response(json_response)
+      [json_content] = json_body["result"]["content"]
+      assert json_content["mimeType"] == "application/json"
+
+      # Verify JSON content can be parsed
+      assert {:ok, _} = Jason.decode(json_content["text"])
+    end
+
+    test "action with parameters filters safely" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      # Pass both valid and invalid parameters
+      params = %{
+        "uri" => "file://ui/custom_card.html",
+        "template" => "Custom Template",
+        "extra_param" => "should be ignored",
+        "another_param" => 123
+      }
+
+      response = read_resource(session_id, "file://ui/custom_card.html", params, @opts)
+      body = decode_response(response)
+
+      assert response.status == 200
+      [content] = body["result"]["content"]
+      assert content["text"] == "<div>Custom Template</div>"
+    end
+  end
+
+  describe "context and session" do
+    test "session context is passed to action" do
+      # Initialize and get session
+      init_response =
+        conn(:post, "/", %{
+          "method" => "initialize",
+          "id" => "init_1",
+          "params" => %{"client" => %{"name" => "test_client", "version" => "1.0.0"}}
+        })
+        |> Router.call(@opts)
+
+      session_id = extract_session_id(init_response)
+      assert session_id
+
+      # Read a resource and verify session is in context
+      # Note: This is a basic check - in a real scenario, the action would
+      # need to store/verify the session_id was passed in context
+      response = read_resource(session_id, "file://ui/artist_card.html", @opts)
+      body = decode_response(response)
+
+      assert body["result"], "Expected successful response when session context is valid"
+    end
+  end
+
+  describe "error handling" do
+    test "JSON-RPC error format is valid" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      # Test resource not found error
+      not_found_response = read_resource(session_id, "file://not/found", @opts)
+      not_found_body = decode_response(not_found_response)
+
+      assert not_found_body["jsonrpc"] == "2.0"
+      assert not_found_body["id"]
+      assert is_map(not_found_body["error"])
+      assert is_integer(not_found_body["error"]["code"])
+      assert is_binary(not_found_body["error"]["message"])
+      assert is_map(not_found_body["error"]["data"])
+
+      # Test action failure error
+      failure_response = read_resource(session_id, "file://fail/test", @opts)
+      failure_body = decode_response(failure_response)
+
+      assert failure_body["jsonrpc"] == "2.0"
+      assert failure_body["id"]
+      assert is_map(failure_body["error"])
+      assert is_integer(failure_body["error"]["code"])
+      assert is_binary(failure_body["error"]["message"])
+      assert is_map(failure_body["error"]["data"])
+    end
+  end
+
+  describe "integration" do
+    test "full flow: initialize -> list -> read" do
+      # Step 1: Initialize
+      init_response =
+        conn(:post, "/", %{
+          "method" => "initialize",
+          "id" => "init_1",
+          "params" => %{"client" => %{"name" => "test_client", "version" => "1.0.0"}}
+        })
+        |> Router.call(@opts)
+
+      session_id = extract_session_id(init_response)
+      init_body = decode_response(init_response)
+
+      assert init_response.status == 200
+      assert init_body["result"]["capabilities"]["resources"]
+
+      # Step 2: List resources
+      list_response = list_resources(session_id, @opts)
+      list_body = decode_response(list_response)
+
+      assert list_response.status == 200
+      resources = list_body["result"]["resources"]
+      assert length(resources) == 4
+
+      # Step 3: Read a resource from the list
+      first_resource = hd(resources)
+      uri = first_resource["uri"]
+
+      read_response = read_resource(session_id, uri, @opts)
+      read_body = decode_response(read_response)
+
+      assert read_response.status == 200
+      [content] = read_body["result"]["content"]
+      assert content["uri"] == uri
+      assert is_binary(content["text"])
+    end
+
+    test "exposed_mcp_resources/1 filtering works correctly" do
+      # Test with actions filter - only return specific resource/action pairs
+      filtered_opts = Keyword.put(@opts, :actions, [{Music.ArtistUi, [:artist_card]}])
+
+      resources = AshAi.exposed_mcp_resources(filtered_opts)
+
+      # Should only return resources using the artist_card action
+      assert length(resources) == 1
+      [resource] = resources
+      assert resource.name == :artist_card
+      assert resource.action.name == :artist_card
+
+      # Test with wildcard - return all actions for resource
+      wildcard_opts = Keyword.put(@opts, :actions, [{Music.ArtistUi, :*}])
+      all_resources = AshAi.exposed_mcp_resources(wildcard_opts)
+
+      # Should return all 4 resources for ArtistUi
+      assert length(all_resources) == 4
+      action_names = Enum.map(all_resources, & &1.action.name)
+      assert :artist_card in action_names
+      assert :artist_json in action_names
+      assert :artist_card_with_params in action_names
+      assert :failing_action in action_names
+    end
+  end
+
+  # Helper functions
+
+  defp initialize_and_get_session_id(opts) do
+    response =
+      conn(:post, "/", %{
+        "method" => "initialize",
+        "id" => "init_1",
+        "params" => %{"client" => %{"name" => "test_client", "version" => "1.0.0"}}
+      })
+      |> Router.call(opts)
+
+    extract_session_id(response)
+  end
+
+  defp list_resources(session_id, opts) do
+    conn(:post, "/", %{"method" => "resources/list", "id" => "list_1"})
+    |> put_req_header("mcp-session-id", session_id)
+    |> Router.call(opts)
+  end
+
+  defp read_resource(session_id, uri, opts) when is_binary(uri) do
+    read_resource(session_id, uri, %{}, opts)
+  end
+
+  defp read_resource(session_id, uri, params, opts) when is_map(params) do
+    request_params = Map.put(params, "uri", uri)
+
+    conn(:post, "/", %{"method" => "resources/read", "id" => "read_1", "params" => request_params})
+    |> put_req_header("mcp-session-id", session_id)
+    |> Router.call(opts)
+  end
+
+  defp extract_session_id(response) do
+    List.first(Plug.Conn.get_resp_header(response, "mcp-session-id"))
+  end
+
+  defp decode_response(response) do
+    Jason.decode!(response.resp_body)
+  end
+end

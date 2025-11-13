@@ -294,13 +294,15 @@ defmodule AshAi.Mcp.Server do
             {:json_response, Jason.encode!(response), session_id}
 
           {:error, error} ->
+            error_message = Exception.message(error)
+
             response = %{
               "jsonrpc" => "2.0",
               "id" => id,
               "error" => %{
                 "code" => -32_603,
                 "message" => "Resource read failed",
-                "data" => %{"uri" => uri, "error" => error}
+                "data" => %{"uri" => uri, "error" => error_message}
               }
             }
 
@@ -448,16 +450,30 @@ defmodule AshAi.Mcp.Server do
          opts
        ) do
     # pick out only the specified params for the action
-    params = take_valid_params(params, resource, action)
+    params = take_valid_params(params, action)
+
+    # Filter opts to only include valid Ash options
+    ash_opts =
+      Keyword.take(opts, [
+        :domain,
+        :context,
+        :authorize?,
+        :tenant,
+        :scope,
+        :actor,
+        :skip_unknown_inputs,
+        :tracer,
+        :private_arguments
+      ])
 
     resource
-    |> Ash.ActionInput.for_action(action.name, params, opts)
+    |> Ash.ActionInput.for_action(action.name, params, ash_opts)
     |> Ash.run_action()
   end
 
-  defp take_valid_params(params, resource, action) do
-    action = Ash.Resource.Info.action(resource, action)
-    argument_names = Enum.map(action.arguments, & &1.name)
+  defp take_valid_params(params, action) do
+    # Convert argument names to strings since params has string keys
+    argument_names = Enum.map(action.arguments, &to_string(&1.name))
     Map.take(params, argument_names)
   end
 

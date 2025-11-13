@@ -196,5 +196,30 @@ defmodule AshAi.Test.Music.ArtistUi do
         {:ok, "<div>Artist Card</div>"}
       end
     end
+
+    action :artist_card_with_params, :string do
+      description "Get an artist card with custom template."
+      argument :template, :string, allow_nil?: false
+
+      run fn input, _ ->
+        {:ok, "<div>#{input.arguments.template}</div>"}
+      end
+    end
+
+    action :failing_action, :string do
+      description "Action that always fails for testing."
+
+      run fn _, _ ->
+        {:error, "Intentional test failure"}
+      end
+    end
+
+    action :artist_json, :string do
+      description "Get artist data as JSON string."
+
+      run fn _, _ ->
+        {:ok, Jason.encode!(%{artist: "Test Artist", genre: "Rock"})}
+      end
+    end
   end
 end

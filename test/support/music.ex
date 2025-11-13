@@ -11,8 +11,31 @@ defmodule AshAi.Test.Music do
   end
 
   mcp_resources do
-    mcp_resource(:artist_card, "file://ui/artist_card.html", ArtistUi, :artist_card,
+    mcp_resource(
+      :artist_card,
+      "file://ui/artist_card.html",
+      AshAi.Test.Music.ArtistUi,
+      :artist_card,
       mime_type: "text/html"
+    )
+
+    mcp_resource(:artist_json, "file://data/artist.json", AshAi.Test.Music.ArtistUi, :artist_json,
+      mime_type: "application/json"
+    )
+
+    mcp_resource(
+      :artist_with_params,
+      "file://ui/custom_card.html",
+      AshAi.Test.Music.ArtistUi,
+      :artist_card_with_params,
+      mime_type: "text/html"
+    )
+
+    mcp_resource(
+      :failing_resource,
+      "file://fail/test",
+      AshAi.Test.Music.ArtistUi,
+      :failing_action
     )
   end
 
