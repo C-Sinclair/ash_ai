@@ -37,6 +37,15 @@ defmodule AshAi.Test.Music do
       AshAi.Test.Music.ArtistUi,
       :failing_action
     )
+
+    mcp_resource(
+      :artist_card_custom,
+      "file://ui/custom_description.html",
+      AshAi.Test.Music.ArtistUi,
+      :artist_card,
+      description: "Custom description from DSL",
+      mime_type: "text/html"
+    )
   end
 
   resources do

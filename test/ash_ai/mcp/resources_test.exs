@@ -41,13 +41,14 @@ defmodule AshAi.Mcp.ResourcesTest do
       body = decode_response(response)
 
       resources = body["result"]["resources"]
-      assert length(resources) == 4
+      assert length(resources) == 5
 
       resource_names = Enum.map(resources, & &1["name"])
       assert "artist_card" in resource_names
       assert "artist_json" in resource_names
       assert "artist_with_params" in resource_names
       assert "failing_resource" in resource_names
+      assert "artist_card_custom" in resource_names
 
       # Verify each resource has required fields
       for resource <- resources do
@@ -55,6 +56,37 @@ defmodule AshAi.Mcp.ResourcesTest do
         assert is_binary(resource["uri"])
         assert is_binary(resource["mimeType"])
       end
+    end
+
+    test "includes action descriptions in resources" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      response = list_resources(session_id, @opts)
+      body = decode_response(response)
+
+      resources = body["result"]["resources"]
+
+      # Find the artist_card resource which has a description from its action
+      artist_card = Enum.find(resources, &(&1["name"] == "artist_card"))
+      assert artist_card["description"] == "Get an artist card UI representation."
+
+      # Artist JSON should also have its description from the action
+      artist_json = Enum.find(resources, &(&1["name"] == "artist_json"))
+      assert artist_json["description"] == "Get artist data as JSON string."
+    end
+
+    test "DSL description overrides action description" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      response = list_resources(session_id, @opts)
+      body = decode_response(response)
+
+      resources = body["result"]["resources"]
+
+      # Find the resource with custom description set via DSL
+      custom_card = Enum.find(resources, &(&1["name"] == "artist_card_custom"))
+      # This should use the DSL description, not the action description
+      assert custom_card["description"] == "Custom description from DSL"
     end
   end
 
@@ -240,7 +272,7 @@ defmodule AshAi.Mcp.ResourcesTest do
 
       assert list_response.status == 200
       resources = list_body["result"]["resources"]
-      assert length(resources) == 4
+      assert length(resources) == 5
 
       # Step 3: Read a resource from the list
       first_resource = hd(resources)
@@ -261,18 +293,23 @@ defmodule AshAi.Mcp.ResourcesTest do
 
       resources = AshAi.exposed_mcp_resources(filtered_opts)
 
-      # Should only return resources using the artist_card action
-      assert length(resources) == 1
-      [resource] = resources
-      assert resource.name == :artist_card
-      assert resource.action.name == :artist_card
+      # Should return resources using the artist_card action (both artist_card and artist_card_custom)
+      assert length(resources) == 2
+      resource_names = Enum.map(resources, & &1.name)
+      assert :artist_card in resource_names
+      assert :artist_card_custom in resource_names
+
+      # Both should have the same action
+      for resource <- resources do
+        assert resource.action.name == :artist_card
+      end
 
       # Test with wildcard - return all actions for resource
       wildcard_opts = Keyword.put(@opts, :actions, [{Music.ArtistUi, :*}])
       all_resources = AshAi.exposed_mcp_resources(wildcard_opts)
 
-      # Should return all 4 resources for ArtistUi
-      assert length(all_resources) == 4
+      # Should return all 5 resources for ArtistUi
+      assert length(all_resources) == 5
       action_names = Enum.map(all_resources, & &1.action.name)
       assert :artist_card in action_names
       assert :artist_json in action_names

@@ -77,6 +77,9 @@ An MCP resource to expose via the Model Context Protocol (MCP).
 MCP Resources are different to Ash Resources. Here they are used to
 respond to LLM models with static or dynamic assets like files, images, or JSON.
 
+The resource description defaults to the action's description. You can override this
+by providing a `description` option which takes precedence.
+
 
 
 
@@ -87,6 +90,10 @@ mcp_resource :artist_card, "file://info/artist_info.txt", Artist, :artist_info
 
 ```
 mcp_resource :artist_card, "file://ui/artist_card.html", Artist, :artist_card, mime_type: "text/html"
+```
+
+```
+mcp_resource :artist_data, "file://data/artist.json", Artist, :to_json, description: "Artist metadata as JSON", mime_type: "application/json"
 ```
 
 

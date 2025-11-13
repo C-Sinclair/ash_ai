@@ -195,17 +195,21 @@ defmodule MyApp.Blog do
 
   mcp_resources do
     # Return HTML UI for a post
+    # Description is inherited from the :render_card action
     mcp_resource :post_card, "file://ui/post_card.html", Post, :render_card,
       mime_type: "text/html"
 
-    # Return JSON data about a post
+    # Return JSON data with custom description
     mcp_resource :post_metadata, "file://data/post.json", Post, :metadata,
+      description: "Metadata about the post including author and tags",
       mime_type: "application/json"
   end
 end
 ```
 
 Resources are exposed via the MCP server at `/mcp` and can be accessed by MCP-compatible clients. The action is called when the resource is read, and its return value is sent to the LLM.
+
+**Description Behavior**: Resource descriptions default to the action's description. You can override this by providing a `description` option in the DSL, which takes precedence.
 
 ### Tool Data Access
 

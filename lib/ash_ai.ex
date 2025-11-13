@@ -1024,10 +1024,13 @@ defmodule AshAi do
             end
           end)
           |> Enum.map(fn mcp_resource ->
+            action = Ash.Resource.Info.action(resource, mcp_resource.action)
+
             %{
               mcp_resource
               | domain: domain,
-                action: Ash.Resource.Info.action(resource, mcp_resource.action)
+                action: action,
+                description: mcp_resource.description || action.description
             }
           end)
       end)
@@ -1038,10 +1041,13 @@ defmodule AshAi do
 
       for domain <- Application.get_env(opts.otp_app, :ash_domains) || [],
           mcp_resource <- AshAi.Info.mcp_resources(domain) do
+        action = Ash.Resource.Info.action(mcp_resource.resource, mcp_resource.action)
+
         %{
           mcp_resource
           | domain: domain,
-            action: Ash.Resource.Info.action(mcp_resource.resource, mcp_resource.action)
+            action: action,
+            description: mcp_resource.description || action.description
         }
       end
     end

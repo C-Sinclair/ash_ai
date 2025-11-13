@@ -13,12 +13,13 @@ defmodule AshAi.Mcp.McpResource do
     use Ash.Domain, extensions: [AshAi.Dsl]
 
     mcp_resources do
-      # Return HTML UI representation
+      # Description inherited from :render_card action
       mcp_resource :post_card, "file://ui/post_card.html", Post, :render_card,
         mime_type: "text/html"
 
-      # Return JSON metadata
+      # Custom description overrides action description
       mcp_resource :post_data, "file://data/post.json", Post, :to_json,
+        description: "JSON metadata including author, tags, and timestamps",
         mime_type: "application/json"
     end
   end
@@ -26,6 +27,12 @@ defmodule AshAi.Mcp.McpResource do
 
   The action is called when an MCP client requests the resource, and its return value
   (which must be a string) is sent to the client with the specified MIME type.
+
+  ## Description Behavior
+
+  Resource descriptions default to the action's description. You can provide a custom
+  `description` option in the DSL which takes precedence over the action description.
+  This helps LLMs understand when to use each resource.
   """
   @type t :: %__MODULE__{
           name: atom(),
