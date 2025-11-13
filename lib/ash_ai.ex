@@ -86,22 +86,6 @@ defmodule AshAi do
     ]
   }
 
-  defmodule Tool do
-    @moduledoc "An action exposed to LLM agents"
-    defstruct [
-      :name,
-      :resource,
-      :action,
-      :load,
-      :async,
-      :domain,
-      :identity,
-      :description,
-      :action_parameters,
-      __spark_metadata__: nil
-    ]
-  end
-
   defmodule ToolStartEvent do
     @moduledoc """
     Event data passed to the `on_tool_start` callback passed to `AshAi.setup_ash_ai/2`.
@@ -136,7 +120,6 @@ defmodule AshAi do
 
   @tool %Spark.Dsl.Entity{
     name: :tool,
-    target: Tool,
     describe: """
     Expose an Ash action as a tool that can be called by LLMs.
 
@@ -144,34 +127,8 @@ defmodule AshAi do
     Only public attributes can be used for filtering, sorting, and aggregation, but the `load`
     option allows including private attributes in the response data.
     """,
-    schema: [
-      name: [type: :atom, required: true],
-      resource: [type: {:spark, Ash.Resource}, required: true],
-      action: [type: :atom, required: true],
-      action_parameters: [
-        type: {:list, :atom},
-        required: false,
-        doc:
-          "A list of action specific parameters to allow for the underlying action. Only relevant for reads, and defaults to allowing `[:sort, :offset, :limit, :result_type, :filter]`"
-      ],
-      load: [
-        type: :any,
-        default: [],
-        doc:
-          "A list of relationships and calculations to load on the returned records. Note that loaded fields can include private attributes, which will then be included in the tool's response. However, private attributes cannot be used for filtering, sorting, or aggregation."
-      ],
-      async: [type: :boolean, default: true],
-      description: [
-        type: :string,
-        doc: "A description for the tool. Defaults to the action's description."
-      ],
-      identity: [
-        type: :atom,
-        default: nil,
-        doc:
-          "The identity to use for update/destroy actions. Defaults to the primary key. Set to `false` to disable entirely."
-      ]
-    ],
+    target: AshAi.Tools.Tool,
+    schema: AshAi.Tools.Tool.schema(),
     args: [:name, :resource, :action]
   }
 
