@@ -997,25 +997,39 @@ defmodule AshAi do
   end
 
   def exposed_mcp_resources(opts) do
-    if opts.mcp_resources do
-      Enum.map(opts.mcp_resources, fn resource_name ->
-        domain =
-          AshAi.Info.domains()
-          |> Enum.find(fn domain ->
-            Enum.any?(AshAi.Info.mcp_resources(domain), fn res ->
-              res.name == resource_name
-            end)
+    if opts.actions do
+      Enum.flat_map(opts.actions, fn
+        {resource, actions} ->
+          domain = Ash.Resource.Info.domain(resource)
+
+          if !domain do
+            raise "Cannot use an ash resource that does not have a domain"
+          end
+
+          mcp_resources = AshAi.Info.mcp_resources(domain)
+
+          if !Enum.any?(mcp_resources, fn mcp_resource ->
+               mcp_resource.resource == resource &&
+                 (actions == :* || mcp_resource.action in actions)
+             end) do
+            raise "Cannot use an action that is not specified to AshAi"
+          end
+
+          mcp_resources
+          |> Enum.filter(fn mcp_resource ->
+            if actions == :* do
+              mcp_resource.resource == resource
+            else
+              mcp_resource.resource == resource && &1.action in actions
+            end
           end)
-
-        if !domain do
-          raise "Cannot find MCP resource #{resource_name} in any Ash domain"
-        end
-
-        mcp_resource =
-          AshAi.Info.mcp_resources(domain)
-          |> Enum.find(fn res -> res.name == resource_name end)
-
-        %{mcp_resource | domain: domain}
+          |> Enum.map(fn mcp_resource ->
+            %{
+              mcp_resource
+              | domain: domain,
+                action: Ash.Resource.Info.action(resource, mcp_resource.action)
+            }
+          end)
       end)
     else
       if !opts.otp_app do
