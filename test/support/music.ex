@@ -16,10 +16,12 @@ defmodule AshAi.Test.Music do
       "file://ui/artist_card.html",
       AshAi.Test.Music.ArtistUi,
       :artist_card,
+      title: "Artist Card",
       mime_type: "text/html"
     )
 
     mcp_resource(:artist_json, "file://data/artist.json", AshAi.Test.Music.ArtistUi, :artist_json,
+      title: "Artist JSON",
       mime_type: "application/json"
     )
 
@@ -28,6 +30,7 @@ defmodule AshAi.Test.Music do
       "file://ui/custom_card.html",
       AshAi.Test.Music.ArtistUi,
       :artist_card_with_params,
+      title: "Artist Card With Params",
       mime_type: "text/html"
     )
 
@@ -35,7 +38,8 @@ defmodule AshAi.Test.Music do
       :failing_resource,
       "file://fail/test",
       AshAi.Test.Music.ArtistUi,
-      :failing_action
+      :failing_action,
+      title: "Failing Resource"
     )
 
     mcp_resource(
@@ -43,6 +47,7 @@ defmodule AshAi.Test.Music do
       "file://ui/custom_description.html",
       AshAi.Test.Music.ArtistUi,
       :artist_card,
+      title: "Artist Card Custom",
       description: "Custom description from DSL",
       mime_type: "text/html"
     )

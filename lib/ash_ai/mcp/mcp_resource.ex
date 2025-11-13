@@ -61,6 +61,7 @@ defmodule AshAi.Mcp.McpResource do
     name: [type: :atom, required: true],
     title: [
       type: :string,
+      required: true,
       doc: "A short, human-readable title for the resource."
     ],
     description: [
