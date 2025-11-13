@@ -248,7 +248,7 @@ defmodule AshAi.Mcp.Server do
 
         {:json_response, Jason.encode!(response), session_id}
 
-      %{"method" => "resources/read", "id" => id, "params" => %{"uri" => uri}} ->
+      %{"method" => "resources/read", "id" => id, "params" => %{"uri" => uri} = params} ->
         opts =
           opts
           |> Keyword.update(
@@ -257,10 +257,29 @@ defmodule AshAi.Mcp.Server do
             &Map.put(&1, :mcp_session_id, session_id)
           )
 
-        opts
-        |> mcp_resources()
-        |> Enum.find(&(&1.uri == uri))
-        |> case do
+        with %AshAi.Mcp.McpResource{
+               uri: uri,
+               mime_type: mime_type
+             } = mcp_resource <-
+               find_mcp_resource_by_uri(uri, opts),
+             {:ok, text} <-
+               run_mcp_resource_action(mcp_resource, params, opts) do
+          response = %{
+            "jsonrpc" => "2.0",
+            "id" => id,
+            "result" => %{
+              "content" => [
+                %{
+                  "uri" => uri,
+                  "mimeType" => mime_type,
+                  "text" => text
+                }
+              ]
+            }
+          }
+
+          {:json_response, Jason.encode!(response), session_id}
+        else
           nil ->
             response = %{
               "jsonrpc" => "2.0",
@@ -274,18 +293,14 @@ defmodule AshAi.Mcp.Server do
 
             {:json_response, Jason.encode!(response), session_id}
 
-          mcp_resource ->
+          {:error, error} ->
             response = %{
               "jsonrpc" => "2.0",
               "id" => id,
-              "result" => %{
-                "content" => [
-                  %{
-                    "uri" => mcp_resource.uri,
-                    "mimeType" => mcp_resource.mime_type,
-                    "text" => mcp_resource.text
-                  }
-                ]
+              "error" => %{
+                "code" => -32_603,
+                "message" => "Resource read failed",
+                "data" => %{"uri" => uri, "error" => error}
               }
             }
 
@@ -416,6 +431,34 @@ defmodule AshAi.Mcp.Server do
       &Map.put(&1, :otp_app, opts[:otp_app])
     )
     |> AshAi.exposed_mcp_resources()
+  end
+
+  defp find_mcp_resource_by_uri(uri, opts) do
+    opts
+    |> mcp_resources()
+    |> Enum.find(&(&1.uri == uri))
+  end
+
+  defp run_mcp_resource_action(
+         %AshAi.Mcp.McpResource{
+           resource: resource,
+           action: action
+         },
+         params,
+         opts
+       ) do
+    # pick out only the specified params for the action
+    params = take_valid_params(params, resource, action)
+
+    resource
+    |> Ash.ActionInput.for_action(action.name, params, opts)
+    |> Ash.run_action()
+  end
+
+  defp take_valid_params(params, resource, action) do
+    action = Ash.Resource.Info.action(resource, action)
+    argument_names = Enum.map(action.arguments, & &1.name)
+    Map.take(params, argument_names)
   end
 
   defp tools(opts) do

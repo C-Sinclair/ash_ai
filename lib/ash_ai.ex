@@ -1020,7 +1020,7 @@ defmodule AshAi do
             if actions == :* do
               mcp_resource.resource == resource
             else
-              mcp_resource.resource == resource && &1.action in actions
+              mcp_resource.resource == resource && mcp_resource.action in actions
             end
           end)
           |> Enum.map(fn mcp_resource ->
