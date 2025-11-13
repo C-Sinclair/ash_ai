@@ -32,7 +32,7 @@ defmodule AshAi.ToolTest do
   end
 
   defmodule TestDomain do
-    use Ash.Domain, extensions: [AshAi]
+    use Ash.Domain, extensions: [AshAi.Dsl]
 
     resources do
       resource TestResource

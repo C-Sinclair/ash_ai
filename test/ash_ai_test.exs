@@ -82,7 +82,7 @@ defmodule AshAiTest do
   end
 
   defmodule Music do
-    use Ash.Domain, extensions: [AshAi]
+    use Ash.Domain, extensions: [AshAi.Dsl]
 
     resources do
       resource(Artist)

@@ -6,7 +6,7 @@ defmodule AshAi.Test.Music.ArtistAfterAction do
   @moduledoc false
   use Ash.Resource,
     domain: AshAi.Test.Music,
-    extensions: [AshAi],
+    extensions: [AshAi.Dsl],
     data_layer: AshPostgres.DataLayer
 
   postgres do
@@ -60,7 +60,7 @@ defmodule AshAi.Test.Music.ArtistManual do
   @moduledoc false
   use Ash.Resource,
     domain: AshAi.Test.Music,
-    extensions: [AshAi],
+    extensions: [AshAi.Dsl],
     data_layer: AshPostgres.DataLayer
 
   postgres do
@@ -114,7 +114,7 @@ defmodule AshAi.Test.Music.ArtistOban do
   @moduledoc false
   use Ash.Resource,
     domain: AshAi.Test.Music,
-    extensions: [AshAi, AshOban],
+    extensions: [AshAi.Dsl, AshOban],
     data_layer: AshPostgres.DataLayer
 
   postgres do
@@ -180,7 +180,7 @@ defmodule AshAi.Test.Music.ArtistUi do
   @moduledoc false
   use Ash.Resource,
     domain: AshAi.Test.Music,
-    extensions: [AshAi]
+    extensions: [AshAi.Dsl]
 
   attributes do
     uuid_v7_primary_key :id, writable?: true

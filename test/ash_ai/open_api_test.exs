@@ -86,7 +86,7 @@ defmodule AshAi.OpenApiTest do
 
   defmodule Music do
     use Ash.Domain,
-      extensions: [AshAi]
+      extensions: [AshAi.Dsl]
 
     resources do
       resource Artist
@@ -113,7 +113,7 @@ defmodule AshAi.OpenApiTest do
     use Ash.Resource,
       domain: TestDomain,
       data_layer: Ash.DataLayer.Ets,
-      extensions: [AshAi]
+      extensions: [AshAi.Dsl]
 
     ets do
       private? true
@@ -168,7 +168,7 @@ defmodule AshAi.OpenApiTest do
 
   defmodule TestDomain do
     use Ash.Domain,
-      extensions: [AshAi],
+      extensions: [AshAi.Dsl],
       validate_config_inclusion?: false
 
     resources do
