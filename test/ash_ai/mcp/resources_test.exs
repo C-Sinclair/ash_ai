@@ -101,11 +101,11 @@ defmodule AshAi.Mcp.ResourcesTest do
       assert body["jsonrpc"] == "2.0"
       assert body["id"] == "read_1"
 
-      content = body["result"]["content"]
-      assert is_list(content)
-      assert length(content) == 1
+      contents = body["result"]["contents"]
+      assert is_list(contents)
+      assert length(contents) == 1
 
-      [item] = content
+      [item] = contents
       assert item["uri"] == "file://ui/artist_card.html"
       assert item["mimeType"] == "text/html"
       assert item["text"] == "<div>Artist Card</div>"
@@ -164,13 +164,13 @@ defmodule AshAi.Mcp.ResourcesTest do
       # Test HTML mime type
       html_response = read_resource(session_id, "file://ui/artist_card.html", @opts)
       html_body = decode_response(html_response)
-      [html_content] = html_body["result"]["content"]
+      [html_content] = html_body["result"]["contents"]
       assert html_content["mimeType"] == "text/html"
 
       # Test JSON mime type
       json_response = read_resource(session_id, "file://data/artist.json", @opts)
       json_body = decode_response(json_response)
-      [json_content] = json_body["result"]["content"]
+      [json_content] = json_body["result"]["contents"]
       assert json_content["mimeType"] == "application/json"
 
       # Verify JSON content can be parsed
@@ -192,7 +192,7 @@ defmodule AshAi.Mcp.ResourcesTest do
       body = decode_response(response)
 
       assert response.status == 200
-      [content] = body["result"]["content"]
+      [content] = body["result"]["contents"]
       assert content["text"] == "<div>Custom Template</div>"
     end
   end
@@ -282,7 +282,7 @@ defmodule AshAi.Mcp.ResourcesTest do
       read_body = decode_response(read_response)
 
       assert read_response.status == 200
-      [content] = read_body["result"]["content"]
+      [content] = read_body["result"]["contents"]
       assert content["uri"] == uri
       assert is_binary(content["text"])
     end

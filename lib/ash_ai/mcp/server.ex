@@ -268,7 +268,7 @@ defmodule AshAi.Mcp.Server do
             "jsonrpc" => "2.0",
             "id" => id,
             "result" => %{
-              "content" => [
+              "contents" => [
                 %{
                   "uri" => uri,
                   "mimeType" => mime_type,
