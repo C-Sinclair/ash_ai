@@ -72,7 +72,7 @@ defmodule AshAi.Tools.Tool do
   @doc false
   def schema, do: @schema
 
-  def name(%__MODULE__{name: name}), do: name
+  def name(%__MODULE__{name: name}), do: to_string(name)
 
   def description(%__MODULE__{description: description, resource: resource, action: action}) do
     String.trim(

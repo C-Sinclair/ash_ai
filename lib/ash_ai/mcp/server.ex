@@ -11,6 +11,8 @@ defmodule AshAi.Mcp.Server do
   It also handles the core JSON-RPC message processing for the protocol.
   """
 
+  alias AshAi.Tools.Tool
+
   @doc """
   Process an HTTP POST request containing JSON-RPC messages
   """
@@ -312,12 +314,18 @@ defmodule AshAi.Mcp.Server do
         tools =
           opts
           |> tools()
-          |> Enum.map(fn function ->
-            %{
-              "name" => function.name,
-              "description" => function.description,
-              "inputSchema" => function.parameters_schema
+          |> Enum.map(fn %Tool{} = tool ->
+            result = %{
+              "name" => Tool.name(tool),
+              "description" => Tool.description(tool),
+              "inputSchema" => Tool.parameters_schema(tool)
             }
+
+            if Tool.has_meta?(tool) do
+              Map.put(result, "_meta", Tool.meta(tool))
+            else
+              result
+            end
           end)
 
         response = %{
@@ -341,11 +349,10 @@ defmodule AshAi.Mcp.Server do
             %{mcp_session_id: session_id},
             &Map.put(&1, :mcp_session_id, session_id)
           )
-          |> Keyword.put(:filter, fn tool -> tool.mcp == :tool end)
 
         opts
         |> tools()
-        |> Enum.find(&(&1.name == tool_name))
+        |> Enum.find(&(Tool.name(&1) == tool_name))
         |> case do
           nil ->
             response = %{
@@ -370,15 +377,24 @@ defmodule AshAi.Mcp.Server do
                 &Map.put(&1, :otp_app, opts[:otp_app])
               )
 
-            case tool.function.(tool_args, context) do
+            case Tool.execute(tool, tool_args, context) do
               {:ok, result, _} ->
+                result = %{
+                  "isError" => false,
+                  "content" => [%{"type" => "text", "text" => result}]
+                }
+
+                result =
+                  if Tool.has_meta?(tool) do
+                    Map.put(result, "_meta", Tool.meta(tool))
+                  else
+                    result
+                  end
+
                 response = %{
                   "jsonrpc" => "2.0",
                   "id" => id,
-                  "result" => %{
-                    "isError" => false,
-                    "content" => [%{"type" => "text", "text" => result}]
-                  }
+                  "result" => result
                 }
 
                 {:json_response, Jason.encode!(response), session_id}
@@ -513,7 +529,7 @@ defmodule AshAi.Mcp.Server do
       %{otp_app: opts[:otp_app]},
       &Map.put(&1, :otp_app, opts[:otp_app])
     )
-    |> AshAi.functions()
+    |> AshAi.exposed_tools()
   end
 
   @doc """
