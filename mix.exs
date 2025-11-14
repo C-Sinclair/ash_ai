@@ -177,7 +177,7 @@ defmodule AshAi.MixProject do
 
   defp aliases do
     [
-      "spark.formatter": "spark.formatter --extensions AshAi",
+      "spark.formatter": "spark.formatter --extensions AshAi.Dsl",
       sobelow: "sobelow --skip",
       credo: "credo --strict",
       docs: [
@@ -185,7 +185,7 @@ defmodule AshAi.MixProject do
         "docs",
         "spark.replace_doc_links"
       ],
-      "spark.cheat_sheets": "spark.cheat_sheets --extensions AshAi",
+      "spark.cheat_sheets": "spark.cheat_sheets --extensions AshAi.Dsl",
       "test.generate_migrations": "ash_postgres.generate_migrations",
       "test.check_migrations": "ash_postgres.generate_migrations --check",
       "test.migrate_tenants": "ash_postgres.migrate --tenants",

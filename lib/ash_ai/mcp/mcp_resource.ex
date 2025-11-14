@@ -67,8 +67,7 @@ defmodule AshAi.Mcp.McpResource do
     description: [
       type: :string,
       doc:
-        "A description of the resource. This is important for LLM to determine what the resource is and when to call it.
-        Defaults to the Action's description if not provided."
+        "A description of the resource. This is important for LLM to determine what the resource is and when to call it. Defaults to the Action's description if not provided."
     ],
     uri: [
       type: :string,
