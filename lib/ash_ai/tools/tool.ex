@@ -20,8 +20,7 @@ defmodule AshAi.Tools.Tool do
 
   require Ash.Expr
 
-  alias AshAi.ToolStartEvent
-  alias AshAi.ToolEndEvent
+  alias AshAi.{ToolEndEvent, ToolStartEvent}
 
   @schema [
     name: [type: :atom, required: true],
