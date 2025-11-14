@@ -8,6 +8,14 @@ defmodule AshAi.Test.Music do
 
   tools do
     tool :list_artists, AshAi.Test.Music.ArtistAfterAction, :read
+
+    tool :list_artists_with_meta, AshAi.Test.Music.ArtistAfterAction, :read,
+      description: "List artists with OpenAI metadata",
+      meta: %{
+        "openai/outputTemplate" => "ui://widget/artist-list.html",
+        "openai/toolInvocation/invoking" => "Loading artists…",
+        "openai/toolInvocation/invoked" => "Artists loaded."
+      }
   end
 
   mcp_resources do
