@@ -139,8 +139,14 @@ defmodule AshAi.Dsl do
     Only public attributes can be used for filtering, sorting, and aggregation, but the `load`
     option allows including private attributes in the response data.
     """,
-    target: AshAi.Tool,
-    schema: @tool_schema,
+    examples: [
+      ~s(tool :list_artists, Artist, :read),
+      ~s(tool :create_artist, Artist, :create, description: "Create a new artist"),
+      ~s(tool :update_artist, Artist, :update, identity: :id, load: [:albums]),
+      ~s|tool :get_board, Board, :read, meta: %{"openai/outputTemplate" => "ui://widget/kanban-board.html", "openai/toolInvocation/invoking" => "Preparing the board…", "openai/toolInvocation/invoked" => "Board ready."}|
+    ],
+    target: AshAi.Tools.Tool,
+    schema: AshAi.Tools.Tool.schema(),
     args: [:name, :resource, :action]
   }
 

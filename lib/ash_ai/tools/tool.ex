@@ -52,19 +52,8 @@ defmodule AshAi.Tools.Tool do
     meta: [
       type: :any,
       default: %{},
-      doc: """
-      Optional metadata map for tool integrations. Supports provider-specific extensions like OpenAI metadata.
-      Keys and values should be strings to comply with JSON-RPC serialization.
-
-      Example:
-      ```elixir
-      meta: %{
-        "openai/outputTemplate" => "ui://widget/kanban-board.html",
-        "openai/toolInvocation/invoking" => "Preparing the board…",
-        "openai/toolInvocation/invoked" => "Board ready."
-      }
-      ```
-      """
+      doc:
+        "Optional metadata map for tool integrations. Supports provider-specific extensions like OpenAI metadata. Keys and values should be strings to comply with JSON-RPC serialization."
     ]
   ]
 
