@@ -14,6 +14,7 @@ defmodule AshAi.Tools.Tool do
     :identity,
     :description,
     :action_parameters,
+    :meta,
     __spark_metadata__: nil
   ]
 
@@ -48,6 +49,23 @@ defmodule AshAi.Tools.Tool do
       default: nil,
       doc:
         "The identity to use for update/destroy actions. Defaults to the primary key. Set to `false` to disable entirely."
+    ],
+    meta: [
+      type: :any,
+      default: %{},
+      doc: """
+      Optional metadata map for tool integrations. Supports provider-specific extensions like OpenAI metadata.
+      Keys and values should be strings to comply with JSON-RPC serialization.
+
+      Example:
+      ```elixir
+      meta: %{
+        "openai/outputTemplate" => "ui://widget/kanban-board.html",
+        "openai/toolInvocation/invoking" => "Preparing the board…",
+        "openai/toolInvocation/invoked" => "Board ready."
+      }
+      ```
+      """
     ]
   ]
 
@@ -62,6 +80,10 @@ defmodule AshAi.Tools.Tool do
         "Call the #{action.name} action on the #{inspect(resource)} resource"
     )
   end
+
+  def has_meta?(%__MODULE__{meta: meta}), do: meta && meta != %{}
+
+  def meta(%__MODULE__{meta: meta}), do: meta
 
   def parameters_schema(%__MODULE__{
         resource: resource,
