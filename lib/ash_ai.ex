@@ -14,11 +14,8 @@ defmodule AshAi do
   require Logger
   require Ash.Expr
 
-  # Alias the struct modules for public API compatibility
-  alias AshAi.ToolStartEvent
-  alias AshAi.ToolEndEvent
+  alias AshAi.{ToolEndEvent, ToolStartEvent}
 
-  # Use the Spark DSL extension defined in AshAi.Dsl
   use Spark.Dsl,
     default_extensions: [extensions: [AshAi.Dsl]]
 
