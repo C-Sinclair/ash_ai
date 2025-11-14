@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 ash_ai contributors <https://github.com/ash-project/ash_ai/graphs.contributors>
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshAi.Mcp.McpResource do
   @moduledoc """
   An MCP resource to expose via the Model Context Protocol (MCP).
