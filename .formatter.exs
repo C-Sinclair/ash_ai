@@ -16,6 +16,7 @@ spark_locals_without_parens = [
   load: 1,
   mcp_resource: 4,
   mcp_resource: 5,
+  meta: 1,
   mime_type: 1,
   name: 1,
   strategy: 1,
