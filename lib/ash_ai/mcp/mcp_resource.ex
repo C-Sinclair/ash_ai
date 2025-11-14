@@ -77,7 +77,7 @@ defmodule AshAi.Mcp.McpResource do
     ],
     mime_type: [
       type: :string,
-      default: "plain/text",
+      default: "text/plain",
       doc: "The MIME type of the resource, e.g. 'application/json', 'image/png', etc."
     ],
     resource: [type: {:spark, Ash.Resource}, required: true],
