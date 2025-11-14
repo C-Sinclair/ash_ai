@@ -80,13 +80,7 @@ defmodule AshAi.Mcp.McpResource do
       doc: "The MIME type of the resource, e.g. 'application/json', 'image/png', etc."
     ],
     resource: [type: {:spark, Ash.Resource}, required: true],
-    action: [type: :atom, required: true],
-    action_parameters: [
-      type: {:list, :atom},
-      required: false,
-      doc:
-        "A list of action specific parameters to allow for the underlying action. Only relevant for reads, and defaults to allowing `[:sort, :offset, :limit, :result_type, :filter]`"
-    ]
+    action: [type: :atom, required: true]
   ]
 
   @doc false
