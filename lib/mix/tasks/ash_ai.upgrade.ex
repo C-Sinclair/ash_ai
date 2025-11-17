@@ -72,18 +72,16 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp has_ash_ai_extension?(zipper) do
-      cond do
-        Igniter.Code.List.list?(zipper) ->
-          match?(
-            {:ok, _},
-            Igniter.Code.List.move_to_list_item(
-              zipper,
-              &Igniter.Code.Common.nodes_equal?(&1, AshAi)
-            )
+      if Igniter.Code.List.list?(zipper) do
+        match?(
+          {:ok, _},
+          Igniter.Code.List.move_to_list_item(
+            zipper,
+            &Igniter.Code.Common.nodes_equal?(&1, AshAi)
           )
-
-        true ->
-          Igniter.Code.Common.nodes_equal?(zipper, AshAi)
+        )
+      else
+        Igniter.Code.Common.nodes_equal?(zipper, AshAi)
       end
     end
 

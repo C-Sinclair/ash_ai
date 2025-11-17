@@ -199,6 +199,7 @@ defmodule Mix.Tasks.AshAi.UpgradeTest do
 
   defp assert_upgrade(input, expected) do
     result = run_upgrade(input)
+
     assert String.trim(result) == String.trim(expected),
            """
            Upgrade did not produce expected output.

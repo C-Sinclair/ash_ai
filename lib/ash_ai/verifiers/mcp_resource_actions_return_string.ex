@@ -3,6 +3,12 @@
 # SPDX-License-Identifier: MIT
 
 defmodule AshAi.Verifiers.McpResourceActionsReturnString do
+  @moduledoc """
+  Verifies that all MCP resource actions return strings.
+
+  This verifier ensures that actions used as MCP resources have a return type
+  of `Ash.Type.String`, which is required for MCP protocol compatibility.
+  """
   use Spark.Dsl.Verifier
 
   @impl true
