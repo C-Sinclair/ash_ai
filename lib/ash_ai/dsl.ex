@@ -121,9 +121,5 @@ defmodule AshAi.Dsl do
     ]
   }
 
-  use Spark.Dsl.Extension,
-    sections: [@tools, @vectorize, @mcp_resources],
-    imports: [AshAi.Actions],
-    transformers: [AshAi.Transformers.Vectorize],
-    verifiers: [AshAi.Verifiers.McpResourceActionsReturnString]
+  def sections, do: [@tools, @vectorize, @mcp_resources]
 end

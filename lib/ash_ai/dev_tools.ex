@@ -5,7 +5,7 @@
 defmodule AshAi.DevTools do
   @moduledoc false
   use Ash.Domain,
-    extensions: [AshAi.Dsl],
+    extensions: [AshAi],
     validate_config_inclusion?: false
 
   tools do

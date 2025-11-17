@@ -16,8 +16,11 @@ defmodule AshAi do
 
   alias AshAi.{ToolEndEvent, ToolStartEvent}
 
-  use Spark.Dsl,
-    default_extensions: [extensions: [AshAi.Dsl]]
+  use Spark.Dsl.Extension,
+    sections: AshAi.Dsl.sections(),
+    imports: [AshAi.Actions],
+    transformers: [AshAi.Transformers.Vectorize],
+    verifiers: [AshAi.Verifiers.McpResourceActionsReturnString]
 
   defmodule Options do
     @moduledoc false
