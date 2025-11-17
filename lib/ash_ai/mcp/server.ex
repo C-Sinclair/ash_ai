@@ -322,7 +322,7 @@ defmodule AshAi.Mcp.Server do
             }
 
             if Tool.has_meta?(tool) do
-              Map.put(result, "_meta", Tool.meta(tool))
+              Map.put(result, "_meta", tool._meta)
             else
               result
             end
@@ -386,7 +386,7 @@ defmodule AshAi.Mcp.Server do
 
                 result =
                   if Tool.has_meta?(tool) do
-                    Map.put(result, "_meta", Tool.meta(tool))
+                    Map.put(result, "_meta", tool._meta)
                   else
                     result
                   end

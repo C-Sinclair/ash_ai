@@ -11,7 +11,7 @@ defmodule AshAi.Test.Music do
 
     tool :list_artists_with_meta, AshAi.Test.Music.ArtistAfterAction, :read,
       description: "List artists with OpenAI metadata",
-      meta: %{
+      _meta: %{
         "openai/outputTemplate" => "ui://widget/artist-list.html",
         "openai/toolInvocation/invoking" => "Loading artists…",
         "openai/toolInvocation/invoked" => "Artists loaded."

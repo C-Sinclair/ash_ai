@@ -14,7 +14,7 @@ defmodule AshAi.Tools.Tool do
     :identity,
     :description,
     :action_parameters,
-    :meta,
+    :_meta,
     __spark_metadata__: nil
   ]
 
@@ -49,7 +49,7 @@ defmodule AshAi.Tools.Tool do
       doc:
         "The identity to use for update/destroy actions. Defaults to the primary key. Set to `false` to disable entirely."
     ],
-    meta: [
+    _meta: [
       type: :any,
       default: %{},
       doc:
@@ -69,9 +69,7 @@ defmodule AshAi.Tools.Tool do
     )
   end
 
-  def has_meta?(%__MODULE__{meta: meta}), do: meta && meta != %{}
-
-  def meta(%__MODULE__{meta: meta}), do: meta
+  def has_meta?(%__MODULE__{_meta: meta}), do: meta && meta != %{}
 
   def parameters_schema(%__MODULE__{
         resource: resource,

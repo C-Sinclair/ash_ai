@@ -143,7 +143,7 @@ defmodule AshAi.Dsl do
       ~s(tool :list_artists, Artist, :read),
       ~s(tool :create_artist, Artist, :create, description: "Create a new artist"),
       ~s(tool :update_artist, Artist, :update, identity: :id, load: [:albums]),
-      ~s|tool :get_board, Board, :read, meta: %{"openai/outputTemplate" => "ui://widget/kanban-board.html", "openai/toolInvocation/invoking" => "Preparing the board…", "openai/toolInvocation/invoked" => "Board ready."}|
+      ~s|tool :get_board, Board, :read, _meta: %{"openai/outputTemplate" => "ui://widget/kanban-board.html", "openai/toolInvocation/invoking" => "Preparing the board…", "openai/toolInvocation/invoked" => "Board ready."}|
     ],
     target: AshAi.Tools.Tool,
     schema: AshAi.Tools.Tool.schema(),
