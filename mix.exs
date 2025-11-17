@@ -74,7 +74,7 @@ defmodule AshAi.MixProject do
       end,
       extras: [
         {"README.md", title: "Home"},
-        {"documentation/dsls/DSL-AshAi.md", search_data: Spark.Docs.search_data_for(AshAi)},
+        {"documentation/dsls/DSL-AshAi.md", search_data: Spark.Docs.search_data_for(AshAi.Dsl)},
         {"documentation/models/gemini.md", title: "Gemini"},
         "CHANGELOG.md"
       ],
