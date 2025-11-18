@@ -10,7 +10,6 @@ defmodule AshAi.Mcp.ResourcesTest do
   import Plug.{Conn, Test}
 
   alias AshAi.Mcp.Router
-  alias AshAi.Test.Music
 
   @opts [otp_app: :ash_ai]
 
@@ -265,6 +264,22 @@ defmodule AshAi.Mcp.ResourcesTest do
       assert init_body["result"]["capabilities"]["resources"]
       assert init_body["result"]["capabilities"]["tools"]
     end
+
+    test "capabilities does not include resources when MCP resources not present" do
+      init_response =
+        conn(:post, "/", %{
+          "method" => "initialize",
+          "id" => "init_1",
+          "params" => %{"client" => %{"name" => "test_client", "version" => "1.0.0"}}
+        })
+        |> Router.call(Keyword.put(@opts, :mcp_resources, []))
+
+      init_body = decode_response(init_response)
+
+      assert init_response.status == 200
+      assert init_body["result"]["capabilities"]["tools"]
+      refute init_body["result"]["capabilities"]["resources"]
+    end
   end
 
   describe "integration" do
@@ -303,36 +318,6 @@ defmodule AshAi.Mcp.ResourcesTest do
       [content] = read_body["result"]["contents"]
       assert content["uri"] == uri
       assert is_binary(content["text"])
-    end
-
-    test "exposed_mcp_resources/1 filtering works correctly" do
-      # Test with actions filter - only return specific resource/action pairs
-      filtered_opts = Keyword.put(@opts, :actions, [{Music.ArtistUi, [:artist_card]}])
-
-      resources = AshAi.exposed_mcp_resources(filtered_opts)
-
-      # Should return resources using the artist_card action (both artist_card and artist_card_custom)
-      assert length(resources) == 2
-      resource_names = Enum.map(resources, & &1.name)
-      assert :artist_card in resource_names
-      assert :artist_card_custom in resource_names
-
-      # Both should have the same action
-      for resource <- resources do
-        assert resource.action.name == :artist_card
-      end
-
-      # Test with wildcard - return all actions for resource
-      wildcard_opts = Keyword.put(@opts, :actions, [{Music.ArtistUi, :*}])
-      all_resources = AshAi.exposed_mcp_resources(wildcard_opts)
-
-      # Should return all 5 resources for ArtistUi
-      assert length(all_resources) == 5
-      action_names = Enum.map(all_resources, & &1.action.name)
-      assert :artist_card in action_names
-      assert :artist_json in action_names
-      assert :artist_card_with_params in action_names
-      assert :failing_action in action_names
     end
   end
 

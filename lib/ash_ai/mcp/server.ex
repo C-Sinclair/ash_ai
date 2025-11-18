@@ -434,7 +434,16 @@ defmodule AshAi.Mcp.Server do
 
   defp mcp_resources(opts) do
     opts
-    |> Keyword.take([:otp_app, :tools, :actor, :context, :tenant, :actions])
+    |> Keyword.take([
+      :otp_app,
+      :tools,
+      :actor,
+      :context,
+      :tenant,
+      :actions,
+      :mcp_resources,
+      :exclude_actions
+    ])
     |> Keyword.update(
       :context,
       %{otp_app: opts[:otp_app]},

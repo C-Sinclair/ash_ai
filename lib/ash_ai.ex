@@ -128,9 +128,9 @@ defmodule AshAi do
           """
         ],
         mcp_resources: [
-          type: {:wrap_list, :string},
+          type: {:or, [{:wrap_list, :atom}, {:literal, :*}]},
           doc: """
-          A list of MCP resource names to expose. If not set, defaults to everything.
+          A list of MCP resource names to expose, or `:*` for all. If not set, defaults to everything.
           """
         ],
         exclude_actions: [
@@ -1084,50 +1084,35 @@ defmodule AshAi do
   end
 
   def exposed_mcp_resources(opts) do
-    if opts.actions do
-      Enum.flat_map(opts.actions, fn
-        {resource, actions} ->
+    if !opts.otp_app and !opts.actions do
+      raise "Must specify `otp_app` if you do not specify `actions`"
+    end
+
+    domains =
+      if opts.actions do
+        opts.actions
+        |> Enum.map(fn {resource, _actions} ->
           domain = Ash.Resource.Info.domain(resource)
 
           if !domain do
             raise "Cannot use an ash resource that does not have a domain"
           end
 
-          mcp_resources = AshAi.Info.mcp_resources(domain)
-
-          if !Enum.any?(mcp_resources, fn mcp_resource ->
-               mcp_resource.resource == resource &&
-                 (actions == :* || mcp_resource.action in actions)
-             end) do
-            raise "Cannot use an action that is not specified to AshAi"
-          end
-
-          mcp_resources
-          |> Enum.filter(fn mcp_resource ->
-            if actions == :* do
-              mcp_resource.resource == resource
-            else
-              mcp_resource.resource == resource && mcp_resource.action in actions
-            end
-          end)
-          |> Enum.map(fn mcp_resource ->
-            action = Ash.Resource.Info.action(resource, mcp_resource.action)
-
-            %{
-              mcp_resource
-              | domain: domain,
-                action: action,
-                description: mcp_resource.description || action.description
-            }
-          end)
-      end)
-    else
-      if !opts.otp_app do
-        raise "Must specify `otp_app` if you do not specify `actions`"
+          domain
+        end)
+        |> Enum.uniq()
+      else
+        Application.get_env(opts.otp_app, :ash_domains) || []
       end
 
-      for domain <- Application.get_env(opts.otp_app, :ash_domains) || [],
-          mcp_resource <- AshAi.Info.mcp_resources(domain) do
+    domains
+    |> Enum.flat_map(fn domain ->
+      domain
+      |> AshAi.Info.mcp_resources()
+      |> Enum.filter(fn mcp_resource ->
+        valid_mcp_resource(mcp_resource, opts.mcp_resources, opts.actions, opts.exclude_actions)
+      end)
+      |> Enum.map(fn mcp_resource ->
         action = Ash.Resource.Info.action(mcp_resource.resource, mcp_resource.action)
 
         %{
@@ -1136,8 +1121,46 @@ defmodule AshAi do
             action: action,
             description: mcp_resource.description || action.description
         }
+      end)
+    end)
+  end
+
+  defp valid_mcp_resource(mcp_resource, allowed_mcp_resources, allowed_actions, exclude_actions) do
+    # If mcp_resources filter is specified (including empty list), check membership
+    passes_mcp_resources_filter =
+      case allowed_mcp_resources do
+        [:*] -> true
+        :* -> true
+        nil -> true
+        [] -> false
+        list when is_list(list) -> Enum.member?(list, mcp_resource.name)
       end
-    end
+
+    # Check if actions filter is specified
+    passes_actions_filter =
+      if allowed_actions && allowed_actions != [] do
+        Enum.any?(allowed_actions, fn
+          {resource, :*} ->
+            mcp_resource.resource == resource
+
+          {resource, actions} when is_list(actions) ->
+            mcp_resource.resource == resource && mcp_resource.action in actions
+        end)
+      else
+        true
+      end
+
+    # Check if this is in the exclude list
+    is_excluded =
+      if exclude_actions && exclude_actions != [] do
+        Enum.any?(exclude_actions, fn {resource, action} ->
+          mcp_resource.resource == resource && mcp_resource.action == action
+        end)
+      else
+        false
+      end
+
+    passes_mcp_resources_filter && passes_actions_filter && !is_excluded
   end
 
   def exposed_tools(opts) when is_list(opts) do
