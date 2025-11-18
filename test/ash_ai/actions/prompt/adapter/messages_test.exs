@@ -39,7 +39,7 @@ defmodule AshAi.Actions.Prompt.Adapter.MessagesTest do
     use Ash.Resource,
       domain: TestDomain,
       data_layer: Ash.DataLayer.Ets,
-      extensions: [AshAi.Dsl]
+      extensions: [AshAi]
 
     ets do
       private?(true)
@@ -256,7 +256,7 @@ defmodule AshAi.Actions.Prompt.Adapter.MessagesTest do
   end
 
   defmodule TestDomain do
-    use Ash.Domain, extensions: [AshAi.Dsl]
+    use Ash.Domain, extensions: [AshAi]
 
     resources do
       resource(TestResource)

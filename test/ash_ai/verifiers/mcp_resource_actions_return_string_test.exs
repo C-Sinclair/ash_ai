@@ -32,7 +32,7 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
           end
 
           defmodule InvalidMcpResourceDomain do
-            use Ash.Domain, extensions: [AshAi.Dsl]
+            use Ash.Domain, extensions: [AshAi]
 
             mcp_resources do
               mcp_resource(
@@ -74,7 +74,7 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
           end
 
           defmodule ValidMcpResourceDomain2 do
-            use Ash.Domain, extensions: [AshAi.Dsl]
+            use Ash.Domain, extensions: [AshAi]
 
             mcp_resources do
               mcp_resource(
@@ -120,7 +120,7 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
           end
 
           defmodule MultipleInvalidMcpResourcesDomain do
-            use Ash.Domain, extensions: [AshAi.Dsl]
+            use Ash.Domain, extensions: [AshAi]
 
             mcp_resources do
               mcp_resource(
@@ -178,7 +178,7 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
           end
 
           defmodule MixedResourcesDomain2 do
-            use Ash.Domain, extensions: [AshAi.Dsl]
+            use Ash.Domain, extensions: [AshAi]
 
             mcp_resources do
               # Only expose the valid string-returning action

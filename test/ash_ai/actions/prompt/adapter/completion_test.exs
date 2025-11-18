@@ -41,7 +41,7 @@ defmodule AshAi.Actions.Prompt.Adapter.CompletionTest do
     use Ash.Resource,
       domain: TestDomain,
       data_layer: Ash.DataLayer.Ets,
-      extensions: [AshAi.Dsl]
+      extensions: [AshAi]
 
     ets do
       private?(true)
@@ -134,7 +134,7 @@ defmodule AshAi.Actions.Prompt.Adapter.CompletionTest do
   end
 
   defmodule ValidationErrorResource do
-    use Ash.Resource, domain: TestDomain, data_layer: Ash.DataLayer.Ets, extensions: [AshAi.Dsl]
+    use Ash.Resource, domain: TestDomain, data_layer: Ash.DataLayer.Ets, extensions: [AshAi]
 
     ets do
       private?(true)
@@ -192,7 +192,7 @@ defmodule AshAi.Actions.Prompt.Adapter.CompletionTest do
   end
 
   defmodule TestDomain do
-    use Ash.Domain, extensions: [AshAi.Dsl]
+    use Ash.Domain, extensions: [AshAi]
 
     resources do
       resource(TestResource)

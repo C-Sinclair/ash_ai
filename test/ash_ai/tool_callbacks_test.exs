@@ -34,7 +34,7 @@ defmodule AshAi.ToolCallbacksTest do
   end
 
   defmodule TestDomain do
-    use Ash.Domain, extensions: [AshAi.Dsl]
+    use Ash.Domain, extensions: [AshAi]
 
     resources do
       resource TestResource

@@ -257,7 +257,7 @@ defmodule AshAi.Mcp.Server do
             &Map.put(&1, :mcp_session_id, session_id)
           )
 
-        with %AshAi.Mcp.McpResource{
+        with %AshAi.McpResource{
                uri: uri,
                mime_type: mime_type
              } = mcp_resource <-
@@ -442,7 +442,7 @@ defmodule AshAi.Mcp.Server do
   end
 
   defp run_mcp_resource_action(
-         %AshAi.Mcp.McpResource{
+         %AshAi.McpResource{
            resource: resource,
            action: action
          },

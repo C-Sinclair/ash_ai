@@ -4,7 +4,7 @@
 
 defmodule AshAi.Test.Music do
   @moduledoc false
-  use Ash.Domain, otp_app: :ash_ai, extensions: [AshAi.Dsl]
+  use Ash.Domain, otp_app: :ash_ai, extensions: [AshAi]
 
   tools do
     tool :list_artists, AshAi.Test.Music.ArtistAfterAction, :read

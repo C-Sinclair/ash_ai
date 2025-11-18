@@ -4,7 +4,7 @@
 
 defmodule AshAi.Dsl do
   @moduledoc """
-  Spark DSL extension for AshAi.
+  Spark DSL schemas and configuration for AshAi.
 
   This module contains all the DSL entity and section definitions that define
   how AshAi resources are configured, including tools, vectorization, and MCP resources.
@@ -12,28 +12,85 @@ defmodule AshAi.Dsl do
 
   require Ash.Expr
 
+  @tool_schema [
+    name: [type: :atom, required: true],
+    resource: [type: {:spark, Ash.Resource}, required: true],
+    action: [type: :atom, required: true],
+    action_parameters: [
+      type: {:list, :atom},
+      required: false,
+      doc:
+        "A list of action specific parameters to allow for the underlying action. Only relevant for reads, and defaults to allowing `[:sort, :offset, :limit, :result_type, :filter]`"
+    ],
+    load: [
+      type: :any,
+      default: [],
+      doc:
+        "A list of relationships and calculations to load on the returned records. Note that loaded fields can include private attributes, which will then be included in the tool's response. However, private attributes cannot be used for filtering, sorting, or aggregation."
+    ],
+    async: [type: :boolean, default: true],
+    description: [
+      type: :string,
+      doc: "A description for the tool. Defaults to the action's description."
+    ],
+    identity: [
+      type: :atom,
+      default: nil,
+      doc:
+        "The identity to use for update/destroy actions. Defaults to the primary key. Set to `false` to disable entirely."
+    ]
+  ]
+
+  @mcp_resource_schema [
+    name: [type: :atom, required: true],
+    title: [
+      type: :string,
+      required: true,
+      doc: "A short, human-readable title for the resource."
+    ],
+    description: [
+      type: :string,
+      doc:
+        "A description of the resource. This is important for LLM to determine what the resource is and when to call it. Defaults to the Action's description if not provided."
+    ],
+    uri: [
+      type: :string,
+      required: true,
+      doc: "The URI where the resource can be accessed."
+    ],
+    mime_type: [
+      type: :string,
+      default: "text/plain",
+      doc: "The MIME type of the resource, e.g. 'application/json', 'image/png', etc."
+    ],
+    resource: [type: {:spark, Ash.Resource}, required: true],
+    action: [type: :atom, required: true]
+  ]
+
+  @full_text_schema [
+    name: [
+      type: :atom,
+      default: :full_text_vector,
+      doc: "The name of the attribute to store the text vector in"
+    ],
+    used_attributes: [
+      type: {:list, :atom},
+      doc: "If set, a vector is only regenerated when these attributes are changed"
+    ],
+    text: [
+      type: {:fun, 1},
+      required: true,
+      doc:
+        "A function or expr that takes a list of records and computes a full text string that will be vectorized. If given an expr, use `atomic_ref` to refer to new values, as this is set as an atomic update."
+    ]
+  ]
+
   @full_text %Spark.Dsl.Entity{
     name: :full_text,
     imports: [Ash.Expr],
     target: AshAi.FullText,
     identifier: :name,
-    schema: [
-      name: [
-        type: :atom,
-        default: :full_text_vector,
-        doc: "The name of the attribute to store the text vector in"
-      ],
-      used_attributes: [
-        type: {:list, :atom},
-        doc: "If set, a vector is only regenerated when these attributes are changed"
-      ],
-      text: [
-        type: {:fun, 1},
-        required: true,
-        doc:
-          "A function or expr that takes a list of records and computes a full text string that will be vectorized. If given an expr, use `atomic_ref` to refer to new values, as this is set as an atomic update."
-      ]
-    ]
+    schema: @full_text_schema
   }
 
   @vectorize %Spark.Dsl.Section{
@@ -82,8 +139,8 @@ defmodule AshAi.Dsl do
     Only public attributes can be used for filtering, sorting, and aggregation, but the `load`
     option allows including private attributes in the response data.
     """,
-    target: AshAi.Tools.Tool,
-    schema: AshAi.Tools.Tool.schema(),
+    target: AshAi.Tool,
+    schema: @tool_schema,
     args: [:name, :resource, :action]
   }
 
@@ -109,8 +166,8 @@ defmodule AshAi.Dsl do
       ~s(mcp_resource :artist_card, "file://ui/artist_card.html", Artist, :artist_card, mime_type: "text/html"),
       ~s(mcp_resource :artist_data, "file://data/artist.json", Artist, :to_json, description: "Artist metadata as JSON", mime_type: "application/json")
     ],
-    target: AshAi.Mcp.McpResource,
-    schema: AshAi.Mcp.McpResource.schema(),
+    target: AshAi.McpResource,
+    schema: @mcp_resource_schema,
     args: [:name, :uri, :resource, :action]
   }
 
@@ -121,9 +178,8 @@ defmodule AshAi.Dsl do
     ]
   }
 
-  use Spark.Dsl.Extension,
-    sections: [@tools, @vectorize, @mcp_resources],
-    imports: [AshAi.Actions],
-    transformers: [AshAi.Transformers.Vectorize],
-    verifiers: [AshAi.Verifiers.McpResourceActionsReturnString]
+  @doc false
+  def sections do
+    [@tools, @vectorize, @mcp_resources]
+  end
 end

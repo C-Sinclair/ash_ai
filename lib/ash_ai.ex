@@ -16,8 +16,98 @@ defmodule AshAi do
 
   alias AshAi.{ToolEndEvent, ToolStartEvent}
 
-  use Spark.Dsl,
-    default_extensions: [extensions: [AshAi.Dsl]]
+  use Spark.Dsl.Extension,
+    sections: AshAi.Dsl.sections(),
+    imports: [AshAi.Actions],
+    transformers: [AshAi.Transformers.Vectorize],
+    verifiers: [AshAi.Verifiers.McpResourceActionsReturnString]
+
+  defmodule Tool do
+    @moduledoc "An action exposed to LLM agents"
+    defstruct [
+      :name,
+      :resource,
+      :action,
+      :load,
+      :async,
+      :domain,
+      :identity,
+      :description,
+      :action_parameters,
+      __spark_metadata__: nil
+    ]
+  end
+
+  defmodule McpResource do
+    @moduledoc """
+    An MCP resource to expose via the Model Context Protocol (MCP).
+
+    MCP resources provide LLMs with access to static or dynamic content like UI components,
+    data files, or images. Unlike tools which perform actions, resources return content that
+    the LLM can read and reference.
+
+    ## Example
+
+    ```elixir
+    defmodule MyApp.Blog do
+      use Ash.Domain, extensions: [AshAi]
+
+      mcp_resources do
+        # Description inherited from :render_card action
+        mcp_resource :post_card, "file://ui/post_card.html", Post, :render_card,
+          mime_type: "text/html"
+
+        # Custom description overrides action description
+        mcp_resource :post_data, "file://data/post.json", Post, :to_json,
+          description: "JSON metadata including author, tags, and timestamps",
+          mime_type: "application/json"
+      end
+    end
+    ```
+
+    The action is called when an MCP client requests the resource, and its return value
+    (which must be a string) is sent to the client with the specified MIME type.
+
+    ## Description Behavior
+
+    Resource descriptions default to the action's description. You can provide a custom
+    `description` option in the DSL which takes precedence over the action description.
+    This helps LLMs understand when to use each resource.
+    """
+    @type t :: %__MODULE__{
+            name: atom(),
+            resource: Ash.Resource.t(),
+            action: atom() | Ash.Resource.Actions.Action.t(),
+            domain: module() | nil,
+            title: String.t(),
+            description: String.t(),
+            uri: String.t(),
+            mime_type: String.t()
+          }
+
+    defstruct [
+      :name,
+      :resource,
+      :action,
+      :domain,
+      :title,
+      :description,
+      :uri,
+      :mime_type,
+      __spark_metadata__: nil
+    ]
+  end
+
+  defmodule FullText do
+    @moduledoc "A section that defines how complex vectorized columns are defined"
+    defstruct [
+      :used_attributes,
+      :text,
+      :__identifier__,
+      name: :full_text_vector,
+      __spark_metadata__: nil
+    ]
+  end
 
   defmodule Options do
     @moduledoc false
@@ -289,7 +379,7 @@ defmodule AshAi do
     |> Jason.decode!()
   end
 
-  defp function(%AshAi.Tools.Tool{
+  defp function(%AshAi.Tool{
          name: name,
          domain: domain,
          resource: resource,

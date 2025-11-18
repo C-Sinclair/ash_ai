@@ -74,7 +74,7 @@ defmodule AshAi.MixProject do
       end,
       extras: [
         {"README.md", title: "Home"},
-        {"documentation/dsls/DSL-AshAi.md", search_data: Spark.Docs.search_data_for(AshAi.Dsl)},
+        {"documentation/dsls/DSL-AshAi.md", search_data: Spark.Docs.search_data_for(AshAi)},
         {"documentation/models/gemini.md", title: "Gemini"},
         "CHANGELOG.md"
       ],
@@ -177,7 +177,7 @@ defmodule AshAi.MixProject do
 
   defp aliases do
     [
-      "spark.formatter": "spark.formatter --extensions AshAi.Dsl",
+      "spark.formatter": "spark.formatter --extensions AshAi",
       sobelow: "sobelow --skip",
       credo: "credo --strict",
       docs: [
@@ -185,7 +185,7 @@ defmodule AshAi.MixProject do
         "docs",
         "spark.replace_doc_links"
       ],
-      "spark.cheat_sheets": "spark.cheat_sheets --extensions AshAi.Dsl",
+      "spark.cheat_sheets": "spark.cheat_sheets --extensions AshAi",
       "test.generate_migrations": "ash_postgres.generate_migrations",
       "test.check_migrations": "ash_postgres.generate_migrations --check",
       "test.migrate_tenants": "ash_postgres.migrate --tenants",
