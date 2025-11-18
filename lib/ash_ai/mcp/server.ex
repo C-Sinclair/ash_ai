@@ -187,6 +187,11 @@ defmodule AshAi.Mcp.Server do
 
         protocol_version_statement = opts[:protocol_version_statement] || "2025-03-26"
 
+        capabilities =
+          opts
+          |> mcp_resources()
+          |> capabilities()
+
         # Return capabilities
         response = %{
           "jsonrpc" => "2.0",
@@ -197,13 +202,7 @@ defmodule AshAi.Mcp.Server do
               "version" => get_server_version(opts)
             },
             "protocolVersion" => protocol_version_statement,
-            "capabilities" => %{
-              "tools" => %{
-                "listChanged" => false
-              },
-              # TODO: consider if this should only show IF there are any resources exposed
-              "resources" => %{}
-            }
+            "capabilities" => capabilities
           }
         }
 
@@ -423,6 +422,15 @@ defmodule AshAi.Mcp.Server do
          session_id}
     end
   end
+
+  # tools always enabled
+  defp capabilities([]), do: %{"tools" => %{"listChanged" => false}}
+
+  # at least 1 mcp_resource adds resources to capabilities
+  defp capabilities([_ | _] = _mcp_resources),
+    do:
+      capabilities([])
+      |> Map.put("resources", %{})
 
   defp mcp_resources(opts) do
     opts
