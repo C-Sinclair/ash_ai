@@ -457,10 +457,8 @@ defmodule AshAi.Mcp.Server do
          params,
          opts
        ) do
-    # pick out only the specified params for the action
     params = take_valid_params(params, action)
 
-    # Filter opts to only include valid Ash options
     ash_opts =
       Keyword.take(opts, [
         :domain,
@@ -480,7 +478,6 @@ defmodule AshAi.Mcp.Server do
   end
 
   defp take_valid_params(params, action) do
-    # Convert argument names to strings since params has string keys
     argument_names = Enum.map(action.arguments, &to_string(&1.name))
     Map.take(params, argument_names)
   end
