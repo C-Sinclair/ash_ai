@@ -16,6 +16,22 @@ defmodule AshAi do
 
   alias AshAi.{ToolEndEvent, ToolStartEvent}
 
+  defmodule Tool do
+    @moduledoc "An action exposed to LLM agents"
+    defstruct [
+      :name,
+      :resource,
+      :action,
+      :load,
+      :async,
+      :domain,
+      :identity,
+      :description,
+      :action_parameters,
+      __spark_metadata__: nil
+    ]
+  end
+
   use Spark.Dsl.Extension,
     sections: AshAi.Dsl.sections(),
     imports: [AshAi.Actions],
@@ -292,7 +308,7 @@ defmodule AshAi do
     |> Jason.decode!()
   end
 
-  defp function(%AshAi.Tools.Tool{
+  defp function(%Tool{
          name: name,
          domain: domain,
          resource: resource,

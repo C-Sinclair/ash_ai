@@ -111,7 +111,7 @@ defmodule AshAi.Dsl do
     Only public attributes can be used for filtering, sorting, and aggregation, but the `load`
     option allows including private attributes in the response data.
     """,
-    target: AshAi.Tools.Tool,
+    target: AshAi.Tool,
     schema: @tool_schema,
     args: [:name, :resource, :action]
   }
