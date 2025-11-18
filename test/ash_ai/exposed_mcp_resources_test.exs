@@ -5,7 +5,7 @@
 defmodule AshAi.ExposedMcpResourcesTest do
   @moduledoc """
   Tests for AshAi.exposed_mcp_resources/1 filtering logic.
-  
+
   This tests the core filtering functionality separate from the MCP protocol/router.
   """
   use AshAi.RepoCase, async: true
@@ -39,7 +39,7 @@ defmodule AshAi.ExposedMcpResourcesTest do
       opts = Keyword.put(@opts, :mcp_resources, [])
       resources = AshAi.exposed_mcp_resources(opts)
 
-      assert length(resources) == 0
+      assert Enum.empty?(resources)
     end
 
     test "mcp_resources: specific list filters to only those resources" do
@@ -103,7 +103,7 @@ defmodule AshAi.ExposedMcpResourcesTest do
 
       resources = AshAi.exposed_mcp_resources(opts)
 
-      assert length(resources) == 0
+      assert Enum.empty?(resources)
     end
 
     test "actions: wildcard with mcp_resources filter" do
@@ -211,7 +211,7 @@ defmodule AshAi.ExposedMcpResourcesTest do
       opts = Keyword.put(@opts, :actions, [{Music.ArtistUi, [:nonexistent_action]}])
       resources = AshAi.exposed_mcp_resources(opts)
 
-      assert length(resources) == 0
+      assert Enum.empty?(resources)
     end
 
     test "returns enriched resources with domain and action metadata" do
