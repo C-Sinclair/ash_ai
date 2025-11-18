@@ -11,46 +11,45 @@ defmodule AshAi.Test.Music do
   end
 
   mcp_resources do
-    mcp_resource(
-      :artist_card,
-      "file://ui/artist_card.html",
-      AshAi.Test.Music.ArtistUi,
-      :artist_card,
-      title: "Artist Card",
-      mime_type: "text/html"
-    )
+    mcp_resource :artist_card,
+                 "file://ui/artist_card.html",
+                 AshAi.Test.Music.ArtistUi,
+                 :artist_card do
+      title "Artist Card"
+      mime_type "text/html"
+    end
 
-    mcp_resource(:artist_json, "file://data/artist.json", AshAi.Test.Music.ArtistUi, :artist_json,
-      title: "Artist JSON",
-      mime_type: "application/json"
-    )
+    mcp_resource :artist_json,
+                 "file://data/artist.json",
+                 AshAi.Test.Music.ArtistUi,
+                 :artist_json do
+      title "Artist JSON"
+      mime_type "application/json"
+    end
 
-    mcp_resource(
-      :artist_with_params,
-      "file://ui/custom_card.html",
-      AshAi.Test.Music.ArtistUi,
-      :artist_card_with_params,
-      title: "Artist Card With Params",
-      mime_type: "text/html"
-    )
+    mcp_resource :artist_with_params,
+                 "file://ui/custom_card.html",
+                 AshAi.Test.Music.ArtistUi,
+                 :artist_card_with_params do
+      title "Artist Card With Params"
+      mime_type "text/html"
+    end
 
-    mcp_resource(
-      :failing_resource,
-      "file://fail/test",
-      AshAi.Test.Music.ArtistUi,
-      :failing_action,
-      title: "Failing Resource"
-    )
+    mcp_resource :failing_resource,
+                 "file://fail/test",
+                 AshAi.Test.Music.ArtistUi,
+                 :failing_action do
+      title "Failing Resource"
+    end
 
-    mcp_resource(
-      :artist_card_custom,
-      "file://ui/custom_description.html",
-      AshAi.Test.Music.ArtistUi,
-      :artist_card,
-      title: "Artist Card Custom",
-      description: "Custom description from DSL",
-      mime_type: "text/html"
-    )
+    mcp_resource :artist_card_custom,
+                 "file://ui/custom_description.html",
+                 AshAi.Test.Music.ArtistUi,
+                 :artist_card do
+      title "Artist Card Custom"
+      description "Custom description from DSL"
+      mime_type "text/html"
+    end
   end
 
   resources do
