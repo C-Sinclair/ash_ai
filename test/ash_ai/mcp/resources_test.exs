@@ -233,7 +233,7 @@ defmodule AshAi.Mcp.ResourcesTest do
       assert not_found_body["id"]
       assert is_map(not_found_body["error"])
       assert is_integer(not_found_body["error"]["code"])
-      assert is_binary(not_found_body["error"]["message"])
+      assert not_found_body["error"]["message"] == "Resource not found"
       assert is_map(not_found_body["error"]["data"])
 
       # Test action failure error
@@ -244,8 +244,26 @@ defmodule AshAi.Mcp.ResourcesTest do
       assert failure_body["id"]
       assert is_map(failure_body["error"])
       assert is_integer(failure_body["error"]["code"])
-      assert is_binary(failure_body["error"]["message"])
+      assert failure_body["error"]["message"] == "Resource read failed"
       assert is_map(failure_body["error"]["data"])
+    end
+  end
+
+  describe "initialization" do
+    test "capabilities include resources when MCP resources are present" do
+      init_response =
+        conn(:post, "/", %{
+          "method" => "initialize",
+          "id" => "init_1",
+          "params" => %{"client" => %{"name" => "test_client", "version" => "1.0.0"}}
+        })
+        |> Router.call(@opts)
+
+      init_body = decode_response(init_response)
+
+      assert init_response.status == 200
+      assert init_body["result"]["capabilities"]["resources"]
+      assert init_body["result"]["capabilities"]["tools"]
     end
   end
 
