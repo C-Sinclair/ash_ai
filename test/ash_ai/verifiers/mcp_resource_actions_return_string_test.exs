@@ -17,7 +17,6 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
     test "produces error when mcp_resource action does not return a string" do
       output =
         capture_io(:stderr, fn ->
-          Code.compile_string("""
           defmodule InvalidResource do
             use Ash.Resource, domain: nil
 
@@ -35,20 +34,17 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
             use Ash.Domain, extensions: [AshAi]
 
             mcp_resources do
-              mcp_resource(
-                :invalid_resource,
-                "file://invalid/resource",
-                InvalidResource,
-                :non_string_action,
-                title: "Invalid Resource"
-              )
+              mcp_resource :invalid_resource,
+                           "file://invalid/resource",
+                           InvalidResource,
+                           :non_string_action,
+                           title: "Invalid Resource"
             end
 
             resources do
               resource InvalidResource
             end
           end
-          """)
         end)
 
       # Verify the error message appears in output
@@ -59,7 +55,6 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
     test "does not produce error when mcp_resource action returns a string" do
       output =
         capture_io(:stderr, fn ->
-          Code.compile_string("""
           defmodule ValidResource2 do
             use Ash.Resource, domain: nil
 
@@ -77,20 +72,17 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
             use Ash.Domain, extensions: [AshAi]
 
             mcp_resources do
-              mcp_resource(
-                :valid_resource,
-                "file://valid/resource",
-                ValidResource2,
-                :string_action,
-                title: "Valid Resource"
-              )
+              mcp_resource :valid_resource,
+                           "file://valid/resource",
+                           ValidResource2,
+                           :string_action,
+                           title: "Valid Resource"
             end
 
             resources do
               resource ValidResource2
             end
           end
-          """)
         end)
 
       # Should not contain the error message
@@ -100,7 +92,6 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
     test "error message includes all invalid mcp_resource names" do
       output =
         capture_io(:stderr, fn ->
-          Code.compile_string("""
           defmodule MultipleInvalidResource do
             use Ash.Resource, domain: nil
 
@@ -131,20 +122,17 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
                 title: "First Invalid"
               )
 
-              mcp_resource(
-                :second_invalid,
-                "file://second/invalid",
-                MultipleInvalidResource,
-                :returns_boolean,
-                title: "Second Invalid"
-              )
+              mcp_resource :second_invalid,
+                           "file://second/invalid",
+                           MultipleInvalidResource,
+                           :returns_boolean,
+                           title: "Second Invalid"
             end
 
             resources do
               resource MultipleInvalidResource
             end
           end
-          """)
         end)
 
       # Verify the error message includes both resource names
@@ -156,7 +144,6 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
     test "allows resource with mixed actions when only valid ones are exposed" do
       output =
         capture_io(:stderr, fn ->
-          Code.compile_string("""
           defmodule MixedResource2 do
             use Ash.Resource, domain: nil
 
@@ -182,20 +169,17 @@ defmodule AshAi.Verifiers.McpResourceActionsReturnStringTest do
 
             mcp_resources do
               # Only expose the valid string-returning action
-              mcp_resource(
-                :valid_only,
-                "file://valid/only",
-                MixedResource2,
-                :string_action,
-                title: "Valid Only"
-              )
+              mcp_resource :valid_only,
+                           "file://valid/only",
+                           MixedResource2,
+                           :string_action,
+                           title: "Valid Only"
             end
 
             resources do
               resource MixedResource2
             end
           end
-          """)
         end)
 
       # Should not complain about the integer_action since it's not exposed
