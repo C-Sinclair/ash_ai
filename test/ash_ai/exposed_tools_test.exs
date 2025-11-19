@@ -43,7 +43,7 @@ defmodule AshAi.ExposedToolsTest do
       opts = Keyword.put(@opts, :tools, [])
       tools = AshAi.exposed_tools(opts)
 
-      assert length(tools) == 0
+      assert Enum.empty?(tools)
     end
   end
 
@@ -199,7 +199,7 @@ defmodule AshAi.ExposedToolsTest do
       opts = Keyword.put(@opts, :tools, [:nonexistent_tool])
       tools = AshAi.exposed_tools(opts)
 
-      assert length(tools) == 0
+      assert Enum.empty?(tools)
     end
 
     test "returns enriched tools with domain and action metadata" do
