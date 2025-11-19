@@ -33,10 +33,7 @@ defmodule AshAi.ExposedToolsTest do
 
     test "tools: single tool in list" do
       opts = Keyword.put(@opts, :tools, [:create_artist_manual])
-      tools = AshAi.exposed_tools(opts)
-
-      assert length(tools) == 1
-      assert hd(tools).name == :create_artist_manual
+      assert [%{name: :create_artist_manual}]  = AshAi.exposed_tools(opts)
     end
 
     test "tools: empty list returns no tools" do
