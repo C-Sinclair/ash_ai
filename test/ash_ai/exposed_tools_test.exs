@@ -44,7 +44,6 @@ defmodule AshAi.ExposedToolsTest do
     test "actions: specific list filters resource/action pairs" do
       opts = Keyword.put(@opts, :actions, [{Music.ArtistAfterAction, [:read, :create]}])
 
-      # Should return only tools using read and create actions on ArtistAfterAction
       assert [%{name: name1}, %{name: name2}] = AshAi.exposed_tools(opts)
       assert MapSet.new([name1, name2]) == MapSet.new([:list_artists, :create_artist_after])
     end
