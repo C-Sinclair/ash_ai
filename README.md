@@ -196,13 +196,15 @@ defmodule MyApp.Blog do
   mcp_resources do
     # Return HTML UI for a post
     # Description is inherited from the :render_card action
-    mcp_resource :post_card, "file://ui/post_card.html", Post, :render_card,
-      mime_type: "text/html"
+    mcp_resource :post_card, "file://ui/post_card.html", Post, :render_card do
+      mime_type "text/html"
+    end
 
     # Return JSON data with custom description
-    mcp_resource :post_metadata, "file://data/post.json", Post, :metadata,
-      description: "Metadata about the post including author and tags",
-      mime_type: "application/json"
+    mcp_resource :post_metadata, "file://data/post.json", Post, :metadata do
+      description "Metadata about the post including author and tags",
+      mime_type "application/json"
+    end
   end
 end
 ```
