@@ -293,15 +293,13 @@ defmodule AshAi.Mcp.Server do
             {:json_response, Jason.encode!(response), session_id}
 
           {:error, error} ->
-            error_message = Exception.message(error)
-
             response = %{
               "jsonrpc" => "2.0",
               "id" => id,
               "error" => %{
                 "code" => -32_603,
                 "message" => "Resource read failed",
-                "data" => %{"uri" => uri, "error" => error_message}
+                "data" => %{"uri" => uri, "error" => error}
               }
             }
 
@@ -460,6 +458,7 @@ defmodule AshAi.Mcp.Server do
 
   defp run_mcp_resource_action(
          %AshAi.McpResource{
+           domain: domain,
            resource: resource,
            action: action
          },
@@ -484,6 +483,19 @@ defmodule AshAi.Mcp.Server do
     resource
     |> Ash.ActionInput.for_action(action.name, params, ash_opts)
     |> Ash.run_action()
+    |> case do
+      {:error, error} ->
+        error = Ash.Error.to_error_class(error)
+
+        {:error,
+         domain
+         |> AshJsonApi.Error.to_json_api_errors(resource, error, action.type)
+         |> AshAi.Serializer.serialize_errors()
+         |> Jason.encode!()}
+
+      result ->
+        result
+    end
   end
 
   defp take_valid_params(params, action) do
