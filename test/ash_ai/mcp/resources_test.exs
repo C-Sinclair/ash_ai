@@ -40,7 +40,7 @@ defmodule AshAi.Mcp.ResourcesTest do
       body = decode_response(response)
 
       resources = body["result"]["resources"]
-      assert length(resources) == 5
+      assert length(resources) == 6
 
       resource_names = Enum.map(resources, & &1["name"])
       assert "artist_card" in resource_names
@@ -48,6 +48,7 @@ defmodule AshAi.Mcp.ResourcesTest do
       assert "artist_with_params" in resource_names
       assert "failing_resource" in resource_names
       assert "artist_card_custom" in resource_names
+      assert "actor_test_resource" in resource_names
 
       # Verify each resource has required fields
       for resource <- resources do
@@ -198,7 +199,6 @@ defmodule AshAi.Mcp.ResourcesTest do
 
   describe "context and session" do
     test "session context is passed to action" do
-      # Initialize and get session
       init_response =
         conn(:post, "/", %{
           "method" => "initialize",
@@ -210,13 +210,65 @@ defmodule AshAi.Mcp.ResourcesTest do
       session_id = extract_session_id(init_response)
       assert session_id
 
-      # Read a resource and verify session is in context
-      # Note: This is a basic check - in a real scenario, the action would
-      # need to store/verify the session_id was passed in context
       response = read_resource(session_id, "file://ui/artist_card.html", @opts)
       body = decode_response(response)
 
       assert body["result"], "Expected successful response when session context is valid"
+    end
+
+    test "actor is passed through to MCP resource actions" do
+      test_actor = %{id: "test_user_123", name: "Test User"}
+      session_id = initialize_and_get_session_id(@opts)
+
+      response =
+        conn(:post, "/", %{
+          "method" => "resources/read",
+          "id" => "actor_read_1",
+          "params" => %{"uri" => "file://test/actor"}
+        })
+        |> put_req_header("mcp-session-id", session_id)
+        |> Ash.PlugHelpers.set_actor(test_actor)
+        |> Router.call(@opts)
+
+      body = decode_response(response)
+
+      assert response.status == 200
+      assert body["result"]["contents"]
+      [content] = body["result"]["contents"]
+      assert content["text"] =~ "actor:"
+      assert content["text"] =~ "test_user_123"
+    end
+
+    test "nil actor is handled correctly in MCP resource actions" do
+      session_id = initialize_and_get_session_id(@opts)
+
+      response = read_resource(session_id, "file://test/actor", @opts)
+      body = decode_response(response)
+
+      assert response.status == 200
+      assert body["result"]["contents"]
+      [content] = body["result"]["contents"]
+      assert content["text"] == "no_actor"
+    end
+
+    test "tenant is passed through to MCP resource actions" do
+      test_tenant = "test_tenant_org"
+      session_id = initialize_and_get_session_id(@opts)
+
+      response =
+        conn(:post, "/", %{
+          "method" => "resources/read",
+          "id" => "tenant_read_1",
+          "params" => %{"uri" => "file://test/actor"}
+        })
+        |> put_req_header("mcp-session-id", session_id)
+        |> Ash.PlugHelpers.set_tenant(test_tenant)
+        |> Router.call(@opts)
+
+      body = decode_response(response)
+
+      assert response.status == 200
+      assert body["result"]["contents"]
     end
   end
 
@@ -284,7 +336,6 @@ defmodule AshAi.Mcp.ResourcesTest do
 
   describe "integration" do
     test "full flow: initialize -> list -> read" do
-      # Step 1: Initialize
       init_response =
         conn(:post, "/", %{
           "method" => "initialize",
@@ -299,15 +350,13 @@ defmodule AshAi.Mcp.ResourcesTest do
       assert init_response.status == 200
       assert init_body["result"]["capabilities"]["resources"]
 
-      # Step 2: List resources
       list_response = list_resources(session_id, @opts)
       list_body = decode_response(list_response)
 
       assert list_response.status == 200
       resources = list_body["result"]["resources"]
-      assert length(resources) == 5
+      assert length(resources) == 6
 
-      # Step 3: Read a resource from the list
       first_resource = hd(resources)
       uri = first_resource["uri"]
 

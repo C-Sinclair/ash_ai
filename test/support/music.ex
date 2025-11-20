@@ -50,6 +50,15 @@ defmodule AshAi.Test.Music do
       description "Custom description from DSL"
       mime_type "text/html"
     end
+
+    mcp_resource :actor_test_resource,
+                 "file://test/actor",
+                 AshAi.Test.Music.ArtistUi,
+                 :actor_test do
+      title "Actor Test"
+      description "Test resource for verifying actor is passed"
+      mime_type "text/plain"
+    end
   end
 
   resources do

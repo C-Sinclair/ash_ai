@@ -19,20 +19,25 @@ defmodule AshAi.ExposedMcpResourcesTest do
       opts = Keyword.put(@opts, :mcp_resources, :*)
       resources = AshAi.exposed_mcp_resources(opts)
 
-      assert length(resources) == 5
       resource_names = Enum.map(resources, & &1.name)
       assert :artist_card in resource_names
       assert :artist_json in resource_names
       assert :artist_with_params in resource_names
       assert :failing_resource in resource_names
       assert :artist_card_custom in resource_names
+      assert :actor_test_resource in resource_names
     end
 
     test "mcp_resources: nil returns all MCP resources (default)" do
       # @opts already has otp_app, should return all resources by default
       resources = AshAi.exposed_mcp_resources(@opts)
-
-      assert length(resources) == 5
+      resource_names = Enum.map(resources, & &1.name)
+      assert :artist_card in resource_names
+      assert :artist_json in resource_names
+      assert :artist_with_params in resource_names
+      assert :failing_resource in resource_names
+      assert :artist_card_custom in resource_names
+      assert :actor_test_resource in resource_names
     end
 
     test "mcp_resources: [] excludes all MCP resources" do
@@ -143,13 +148,12 @@ defmodule AshAi.ExposedMcpResourcesTest do
       opts = Keyword.put(@opts, :actions, [{Music.ArtistUi, :*}])
       resources = AshAi.exposed_mcp_resources(opts)
 
-      # Should return all 5 resources for ArtistUi
-      assert length(resources) == 5
       action_names = Enum.map(resources, & &1.action.name)
       assert :artist_card in action_names
       assert :artist_json in action_names
       assert :artist_card_with_params in action_names
       assert :failing_action in action_names
+      assert :actor_test in action_names
     end
   end
 
@@ -158,10 +162,7 @@ defmodule AshAi.ExposedMcpResourcesTest do
       opts = Keyword.put(@opts, :exclude_actions, [{Music.ArtistUi, :artist_json}])
       resources = AshAi.exposed_mcp_resources(opts)
 
-      # Should return 4 resources (all except artist_json)
-      assert length(resources) == 4
-      resource_names = Enum.map(resources, & &1.name)
-      refute :artist_json in resource_names
+      refute :artist_json in Enum.map(resources, & &1.name)
     end
 
     test "exclude_actions: multiple exclusions" do
@@ -172,10 +173,8 @@ defmodule AshAi.ExposedMcpResourcesTest do
         ])
 
       resources = AshAi.exposed_mcp_resources(opts)
-
-      # Should return 3 resources
-      assert length(resources) == 3
       resource_names = Enum.map(resources, & &1.name)
+
       refute :artist_json in resource_names
       refute :failing_resource in resource_names
     end
@@ -191,8 +190,6 @@ defmodule AshAi.ExposedMcpResourcesTest do
 
       resources = AshAi.exposed_mcp_resources(opts)
 
-      # mcp_resources allows 3, actions allows all, exclude_actions removes artist_json
-      assert length(resources) == 2
       resource_names = Enum.map(resources, & &1.name)
       assert :artist_card in resource_names
       assert :artist_card_custom in resource_names

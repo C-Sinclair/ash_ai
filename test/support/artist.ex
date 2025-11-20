@@ -221,5 +221,16 @@ defmodule AshAi.Test.Music.ArtistUi do
         {:ok, Jason.encode!(%{artist: "Test Artist", genre: "Rock"})}
       end
     end
+
+    action :actor_test, :string do
+      description "Returns the actor ID if present."
+
+      run fn _, context ->
+        case context.actor do
+          nil -> {:ok, "no_actor"}
+          actor -> {:ok, "actor:#{inspect(actor)}"}
+        end
+      end
+    end
   end
 end
