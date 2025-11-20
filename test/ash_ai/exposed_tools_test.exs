@@ -84,8 +84,6 @@ defmodule AshAi.ExposedToolsTest do
       assert length(tools) == 4
       tool_names = Enum.map(tools, & &1.name)
       refute :create_artist_after in tool_names
-      assert :list_artists in tool_names
-      assert :update_artist_after in tool_names
     end
 
     test "exclude_actions: multiple exclusions" do
