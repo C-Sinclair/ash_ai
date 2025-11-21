@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 ash_ai contributors <https://github.com/ash-project/ash_ai/graphs.contributors>
+#
+# SPDX-License-Identifier: MIT
+
 defmodule AshAi.Tools do
   @moduledoc """
   Utilities for interacting with AshAi tools.
