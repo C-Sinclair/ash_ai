@@ -11,6 +11,25 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.6.0](https://github.com/ash-project/ash_ai/compare/v0.5.0...v0.6.0) (2026-04-09)
+
+
+
+
+### Features:
+
+* Hard cutover to ReqLLM: remove LangChain runtime and migrate chat generator (#177) by mikehostetler [(#177)](https://github.com/ash-project/ash_ai/pull/177)
+
+* add mcp_ui_resource for MCP Apps spec (#173) by [@nallwhy](https://github.com/nallwhy) [(#173)](https://github.com/ash-project/ash_ai/pull/173)
+
+### Improvements:
+
+* For `gen.chat` task make all tools available by default (#176) by Kenneth Kostrešević [(#176)](https://github.com/ash-project/ash_ai/pull/176)
+
+* Support --provider, --route and --live-component (#175) by Kenneth Kostrešević [(#175)](https://github.com/ash-project/ash_ai/pull/175)
+
+* add `strict?` option, change how filters behave under it by [@zachdaniel](https://github.com/zachdaniel)
+
 ## [Unreleased]
 
 ### Breaking Changes
