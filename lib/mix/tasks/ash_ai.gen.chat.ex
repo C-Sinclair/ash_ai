@@ -17,7 +17,40 @@ defmodule Mix.Tasks.AshAi.Gen.Chat.Docs do
     """
     #{short_doc()}
 
-    Creates a `YourApp.Chat.Conversation` and a `YourApp.Chat.Message` resource, backed by postgres and ash_oban.
+    Generates a complete chat feature for your Ash & Phoenix application, including Ash resources for
+    conversations and messages, Oban background jobs for LLM responses, PubSub-based real-time streaming,
+    and optional Phoenix LiveView/LiveComponent UIs. Uses `AshAi.ToolLoop.stream/2` with ReqLLM for
+    incremental streaming responses.
+
+    This is primarily a tool to get started with chat features and is by no means intended to handle
+    every case you can come up with. The generated code is yours to customize.
+
+    ## Quick Start
+
+    From scratch with a new Phoenix app:
+
+    ```bash
+    mix igniter.new my_app \\
+      --with phx.new \\
+      --install ash,ash_postgres,ash_phoenix \\
+      --install ash_authentication_phoenix,ash_oban \\
+      --install ash_ai@github:ash-project/ash_ai \\
+      --auth-strategy password
+    ```
+
+    Then generate the chat feature:
+
+    ```bash
+    mix ash_ai.gen.chat --live
+    ```
+
+    Set your LLM API key (OpenAI by default):
+
+    ```bash
+    export OPENAI_API_KEY=sk-...
+    ```
+
+    Start the server and visit `http://localhost:4000/chat`.
 
     ## Examples
 
@@ -51,13 +84,190 @@ defmodule Mix.Tasks.AshAi.Gen.Chat.Docs do
 
     ## Options
 
-    * `--user` - The user resource.
+    * `--user` - The user resource module. If omitted, looks for `YourApp.Accounts.User` automatically. If no user resource is found, the generator still works but produces resources without user associations or actor-based filtering.
     * `--domain` - The domain module to place the resources in. E.g., `--domain MyApp.SupportChat` generates `MyApp.SupportChat.Conversation` and `MyApp.SupportChat.Message`. Defaults to `YourApp.Chat`.
-    * `--route` - A URL prefix for the chat routes. E.g., `--route support` mounts routes at `/support/chat`.
-    * `--provider` - The LLM provider to use: `openai` (default), `anthropic`, or `gemini`.
+    * `--route` - The URL path for the chat routes. Defaults to `/chat`. Mounts both `route` and `route/:conversation_id`.
+    * `--provider` - The LLM provider to use: `openai` (default), `anthropic`, or `gemini`. Sets the default model and configures the appropriate API key in `config/runtime.exs`.
     * `--extend` - Extensions to apply to the generated resources, passed through to `mix ash.gen.resource`.
     * `--live` - Generate a full-page Phoenix LiveView for the chat UI.
     * `--live-component` - Generate a reusable Phoenix LiveComponent for embedding the chat UI in existing pages.
+    * `--yes` - Skip confirmation prompts.
+
+    ## What Gets Generated
+
+    ### Dependencies
+
+    The generator ensures the following dependencies are installed and configured:
+
+    * `ash_phoenix` - for forms and code interfaces
+    * `ash_oban` - for background job processing
+    * `mdex` - for Markdown rendering in the UI
+
+    ### Domain Module (`YourApp.Chat`)
+
+    A domain with `AshPhoenix` and `AshAi` extensions, providing code interfaces:
+
+    * `create_conversation/1` - create a new conversation
+    * `get_conversation/1` - fetch a conversation by ID
+    * `my_conversations/0` (or `list_conversations/0` without a user) - list conversations for the current actor
+    * `create_message/1` - send a message (triggers LLM response via Oban)
+    * `message_history/1` - fetch messages for a conversation, sorted by `inserted_at` desc
+
+    ### Conversation Resource
+
+    * **Attributes**: `id` (UUID v7), `title` (string), `inserted_at`, `updated_at`
+    * **Relationships**: `has_many :messages`, `belongs_to :user` (when user resource is provided)
+    * **Actions**:
+      * `:create` - accepts `title`, relates actor as user
+      * `:read` - default read
+      * `:destroy` - default destroy
+      * `:my_conversations` - filtered to `user_id == actor(:id)` (when user resource is provided)
+      * `:generate_name` - uses the LLM to generate a 2-8 word title from the first 10 messages
+    * **Calculations**: `needs_title` - true when title is nil and the conversation has more than 3 messages (or more than 1 message and is older than 10 minutes)
+    * **Extensions**: `postgres`, `AshOban`
+
+    ### Message Resource
+
+    * **Attributes**:
+      * `id` (UUID v7, writable)
+      * `text` (string, required, allows empty, no trimming)
+      * `tool_calls` (array of maps) - structured tool invocation data
+      * `tool_results` (array of maps) - tool execution results
+      * `source` (enum: `:user` | `:agent`, default `:user`)
+      * `complete` (boolean, default `true`) - false while streaming
+      * `inserted_at`, `updated_at`
+    * **Relationships**: `belongs_to :conversation` (required), `belongs_to :response_to` (self-referential), `has_one :response`
+    * **Actions**:
+      * `:create` - accepts `text`, validates non-empty, optionally takes `conversation_id` (creates a new conversation if omitted), triggers the `:respond` Oban job
+      * `:read` - default read
+      * `:destroy` - default destroy
+      * `:for_conversation` - keyset-paginated read filtered by `conversation_id`, sorted by `inserted_at` desc
+      * `:respond` - update action that runs the `Respond` change (streams LLM response via `AshAi.ToolLoop.stream/2`)
+      * `:upsert_response` - creates or atomically updates the agent's response message, appending streamed text chunks and tool call/result data
+    * **Calculations**: `needs_response` - true when `source == :user` and no response message exists
+    * **Extensions**: `postgres`, `AshOban`
+
+    ### Respond Change
+
+    The generated `Respond` change module:
+
+    1. Loads the full message history for the conversation
+    2. Builds a prompt chain with a system message ("You are a helpful chat bot...") followed by the message history
+    3. Calls `AshAi.ToolLoop.stream/2` with `tools: true` (all AshAi domain tools available)
+    4. Streams content chunks, upserting the response message as tokens arrive (enabling real-time UI updates via PubSub)
+    5. Accumulates tool calls and tool results during the stream
+    6. Finalizes the response message with the complete text, tool calls, and tool results
+    7. Handles stream errors gracefully with user-facing error messages
+
+    ### GenerateName Change
+
+    Automatically generates a conversation title by sending the first 10 messages to the LLM with
+    a system prompt requesting a 2-8 word name. Triggered by the `:name_conversation` Oban trigger
+    when `needs_title` is true.
+
+    ### Oban Triggers
+
+    * `:respond` - runs on the Message resource when `needs_response` is true. Queue: `chat_responses` (limit 10).
+    * `:name_conversation` - runs on the Conversation resource when `needs_title` is true. Queue: `conversations` (limit 10).
+
+    Both triggers use `scheduler_cron false` (event-driven, not polled) and `lock_for_update? false`.
+
+    When a user resource is provided, an `AiAgentActorPersister` module is generated to serialize/deserialize
+    the actor for Oban jobs. The persisted user gets `chat_agent?: true` metadata so you can differentiate
+    agent-initiated actions in policies.
+
+    ### Configuration
+
+    The generator adds to your app config:
+
+    * `config/runtime.exs` - ReqLLM API key for the selected provider
+    * `config/config.exs` - Oban queue configuration (`chat_responses` and `conversations`, limit 10 each)
+
+    ### Provider Models
+
+    The default model for each provider:
+
+    * `openai` → `openai:gpt-4o`
+    * `anthropic` → `anthropic:claude-sonnet-4-5`
+    * `gemini` → `google:gemini-1.5-pro`
+
+    Change the model string in the generated `Respond` and `GenerateName` change modules to use a different model.
+    Model strings follow the `"provider:model-name"` format from ReqLLM.
+
+    ## LiveView (`--live`)
+
+    Generates a full-page Phoenix LiveView with:
+
+    * **Conversation sidebar** - lists conversations, "New Chat" button, highlights the active conversation
+    * **Message stream** - displays messages in a chat bubble layout with avatar icons, auto-scrolls to latest
+    * **Message input** - text input with send button, auto-focuses on mount
+    * **Real-time streaming** - subscribes to PubSub topics for the active conversation, updates messages as they stream in
+    * **Agent responding indicator** - shows a loading animation while the LLM is generating
+    * **Markdown rendering** - agent messages are rendered as HTML via MDEx with GitHub-flavored extensions (strikethrough, tables, autolinks, task lists, footnotes, code highlighting)
+    * **Tool call/result badges** - displays tool invocations and results inline with messages
+    * **Responsive drawer** - sidebar collapses on mobile with a hamburger toggle
+
+    Routes are added to your router inside the `ash_authentication_live_session` block:
+
+    ```elixir
+    live "/chat", ChatLive
+    live "/chat/:conversation_id", ChatLive
+    ```
+
+    ### PubSub Topics
+
+    The LiveView subscribes to:
+
+    * `chat:messages:<conversation_id>` - new and updated messages for the active conversation
+    * `chat:conversations:<user_id>` - conversation creates/updates (for sidebar)
+
+    ### Prerequisites
+
+    The chat UI templates use Tailwind CSS and DaisyUI for styling. DaisyUI is included in Phoenix 1.8+.
+    For older Phoenix apps, [install DaisyUI](https://daisyui.com/docs/install/) first.
+
+    ## LiveComponent (`--live-component`)
+
+    Generates a reusable `Phoenix.LiveComponent` with the same features as the LiveView, but embeddable
+    in existing pages. After generation, you'll see a notice with integration instructions.
+
+    Usage in your parent LiveView:
+
+    ```elixir
+    <.live_component
+      module={YourAppWeb.ChatComponent}
+      id="chat"
+      current_user={@current_user}
+      conversation_id={@conversation_id}
+      hide_sidebar={false}
+    />
+    ```
+
+    Your parent LiveView must:
+
+    1. Subscribe to PubSub and forward broadcasts:
+
+    ```elixir
+    def mount(_params, _session, socket) do
+      if connected?(socket) do
+        YourAppWeb.ChatComponent.subscribe(socket.assigns.current_user)
+      end
+      {:ok, socket}
+    end
+
+    def handle_info(%Phoenix.Socket.Broadcast{} = broadcast, socket) do
+      send_update(YourAppWeb.ChatComponent, id: "chat", broadcast: broadcast)
+      {:noreply, socket}
+    end
+    ```
+
+    2. Handle navigation events from the component:
+
+    ```elixir
+    def handle_info({:chat_component_navigate, conversation_id}, socket) do
+      {:noreply, assign(socket, :conversation_id, conversation_id)}
+    end
+    ```
 
     ## Tool Call/Result UI Extraction
 
@@ -70,6 +280,8 @@ defmodule Mix.Tasks.AshAi.Gen.Chat.Docs do
     @chat_ui_tools MyApp.ChatUITools
     ```
 
+    Your custom module must implement `extract/1` returning `{:ok, %{tool_calls: [...], tool_results: [...]}}` or `{:error, reason}`.
+
     ## Starter Tools
 
     Generated chat domains include a small default tool set so tool calling works immediately:
@@ -77,7 +289,34 @@ defmodule Mix.Tasks.AshAi.Gen.Chat.Docs do
     * `:chat_list_conversations` - lists conversations visible to the actor.
     * `:chat_message_history` - fetches messages for a specific conversation.
 
-    Add your own domain tools for app-specific behavior.
+    These are registered in the domain's `tools` block. The generated `Respond` change uses `tools: true`
+    to make all tools from all AshAi-enabled domains available to the LLM. To restrict which tools are
+    available, change `tools: true` to `tools: [:tool_name_1, :tool_name_2]` in the generated Respond module.
+
+    ## Adding Your Own Tools
+
+    Expose Ash actions as tools in any domain:
+
+    ```elixir
+    defmodule MyApp.Blog do
+      use Ash.Domain, extensions: [AshAi]
+
+      tools do
+        tool :read_posts, MyApp.Blog.Post, :read
+        tool :create_post, MyApp.Blog.Post, :create
+      end
+    end
+    ```
+
+    These tools become automatically available to the chat LLM when `tools: true` is set.
+
+    ## Customizing the System Prompt
+
+    The generated `Respond` change module contains a default system prompt:
+
+    > You are a helpful chat bot. Your job is to use the tools at your disposal to assist the user.
+
+    Edit this directly in the generated change module to customize the LLM's behavior.
     """
   end
 end
