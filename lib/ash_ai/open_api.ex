@@ -373,7 +373,9 @@ defmodule AshAi.OpenApi do
   # this is kind of a hack, specifically because open ai requires that all fields
   # be required. But the value can be `null`
   defp make_all_required(map) do
-    Map.put(map, :required, Map.keys(map.properties))
+    required_list = map.properties |> Map.keys() |> Enum.sort()
+
+    Map.put(map, :required, required_list)
   end
 
   @doc false
